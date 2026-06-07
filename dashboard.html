@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>東上航 航線統計儀表板</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg:#dce8f5; --surface:#ffffff; --surface2:#eaf2fb; --border:#c5d9ee;
+  --text:#1a2d45; --muted:#6b8aaa;
+  --fm802:#2e7ec7; --mu5098:#e8744a; --fm820:#f0b429; --fm852:#9b7fe8;
+  --upgrade:#2e7ec7; --accent:#2e7ec7;
+  --sidebar:#1e3a5f; --header-bg:#1e3a5f;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;}
+
+/* ── Upload screen ── */
+#upload-screen {
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;
+  background:radial-gradient(ellipse 70% 60% at 50% 40%,rgba(46,126,199,.08) 0%,transparent 70%);
+}
+.upload-logo{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:16px;}
+.upload-title{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px;text-align:center;}
+.upload-title span{color:var(--accent);}
+.upload-sub{font-size:14px;color:var(--muted);margin-bottom:40px;text-align:center;}
+.drop-zone{
+  width:min(520px,90vw);border:2px dashed var(--border);border-radius:16px;
+  background:var(--surface);padding:48px 32px;text-align:center;cursor:pointer;
+  transition:border-color .2s,background .2s;
+}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(46,126,199,.05);}
+.drop-icon{font-size:48px;margin-bottom:16px;opacity:.5;}
+.drop-label{font-size:16px;font-weight:500;margin-bottom:8px;}
+.drop-hint{font-size:13px;color:var(--muted);}
+.drop-hint span{color:var(--accent);text-decoration:underline;cursor:pointer;}
+#file-input{display:none;}
+.format-note{
+  margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:16px 20px;width:min(520px,90vw);font-size:12px;color:var(--muted);line-height:1.9;
+}
+.format-note strong{color:var(--text);}
+.progress-wrap{margin-top:24px;width:min(520px,90vw);display:none;}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);width:0;transition:width .3s;border-radius:2px;}
+.progress-msg{font-size:12px;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;}
+.error-msg{
+  margin-top:16px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  border-radius:8px;padding:12px 16px;font-size:13px;color:#ef4444;
+  display:none;width:min(520px,90vw);line-height:1.6;
+}
+
+/* ── Dashboard ── */
+#dashboard{display:none;}
+
+header{
+  background:linear-gradient(135deg,#1e3a5f 0%,#24487a 100%);border-bottom:1px solid #16304f;
+  padding:20px 40px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden;
+}
+header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 80% 50%,rgba(255,255,255,.04) 0%,transparent 70%);pointer-events:none;}
+.header-title{flex:1;}
+.airline-tag{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;color:#7db8e8;margin-bottom:4px;}
+h1{font-size:22px;font-weight:700;letter-spacing:-.5px;color:#ffffff;}
+h1 span{color:#7db8e8;}
+.period-badge{font-family:'Space Mono',monospace;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 14px;font-size:12px;color:#aacde8;white-space:nowrap;}
+.reload-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#aacde8;cursor:pointer;font-size:12px;padding:6px 14px;transition:color .15s,border-color .15s;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;}
+.reload-btn:hover{color:#fff;border-color:rgba(255,255,255,.4);}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.kpi{background:var(--surface);padding:18px 24px;position:relative;overflow:hidden;}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--accent));opacity:.8;}
+.kpi-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.kpi-value{font-family:'Space Mono',monospace;font-size:26px;font-weight:700;color:var(--kpi-color,var(--text));line-height:1;}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+.tabs{display:flex;gap:4px;padding:0 40px;background:var(--surface);border-bottom:1px solid var(--border);}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-size:14px;padding:14px 16px 12px;transition:color .2s,border-color .2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
+.tab:hover:not(.active){color:var(--text);}
+
+.page{display:none;padding:24px 40px;background:var(--bg);}
+.page.active{display:block;}
+.chart-grid{display:grid;gap:16px;}
+.chart-grid-2{grid-template-columns:1fr 1fr;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,58,95,.06);}
+.card-title{font-size:13px;font-weight:600;margin-bottom:3px;color:var(--text);}
+.card-sub{font-size:11px;color:var(--muted);margin-bottom:14px;}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;transition:color .15s;user-select:none;}
+.legend-item:hover{color:var(--text);}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+.dt{width:100%;border-collapse:collapse;font-size:13px;}
+.dt th{text-align:left;padding:10px 14px;background:var(--surface2);color:var(--muted);font-size:11px;letter-spacing:1px;font-weight:600;border-bottom:1px solid var(--border);}
+.dt td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text);}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:rgba(46,126,199,.04);}
+.badge{display:inline-block;font-family:'Space Mono',monospace;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;}
+.flight-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;padding:6px 14px;transition:all .15s;}
+.flight-btn.active{border-color:var(--flight-color);color:var(--flight-color);background:color-mix(in srgb,var(--flight-color) 8%,white);}
+.delay-row-late30 td{background:rgba(239,68,68,.05)!important;}
+.delay-row-late30:hover td{background:rgba(239,68,68,.13)!important;}
+.dchip{display:inline-block;font-family:'Space Mono',monospace;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- UPLOAD -->
+<div id="upload-screen">
+  <h2 class="upload-title">航線統計 <span>儀表板</span></h2>
+  <p class="upload-sub">上傳每月統計 XLS，自動解析生成視覺化報表</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept=".xls,.xlsx">
+    <div class="drop-icon">📂</div>
+    <div class="drop-label">拖放 XLS 檔案到此處</div>
+    <div class="drop-hint">或 <span onclick="document.getElementById('file-input').click()">點擊選擇檔案</span></div>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-msg" id="progress-msg">讀取中…</div>
+  </div>
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="format-note">
+    <strong>支援格式：</strong>原始統計 XLS（.xls / .xlsx）<br>
+    <strong>資料安全：</strong>所有解析均在本機瀏覽器完成，檔案不會上傳至任何伺服器
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header>
+    <div class="header-title">
+      <h1>航線統計 <span id="hdr-period">—</span></h1>
+    </div>
+    <div class="period-badge" id="hdr-file">—</div>
+    <button class="reload-btn" onclick="resetToUpload()">↩ 換月份</button>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi" style="--kpi-color:var(--accent)"><div class="kpi-label">月總載客</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">旅客人數</div></div>
+    <div class="kpi" style="--kpi-color:var(--mu5098)"><div class="kpi-label">最高單日</div><div class="kpi-value" id="kpi-peak">—</div><div class="kpi-sub" id="kpi-peak-date">—</div></div>
+    <div class="kpi" style="--kpi-color:var(--upgrade)"><div class="kpi-label">優惠升艙人次</div><div class="kpi-value" id="kpi-upgrade">—</div><div class="kpi-sub">升艙統計表</div></div>
+    <div class="kpi" style="--kpi-color:var(--fm852)"><div class="kpi-label">平均載客率</div><div class="kpi-value" id="kpi-lf">—</div><div class="kpi-sub">四航班加權平均</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview',this)">總覽</button>
+    <button class="tab" onclick="switchTab('pax',this)">載客人數</button>
+    <button class="tab" onclick="switchTab('lf',this)">載客率</button>
+    <button class="tab" onclick="switchTab('upgrade',this)">升艙統計</button>
+    <button class="tab" onclick="switchTab('delay',this)">起飛準點</button>
+  </div>
+
+  <div class="page active" id="page-overview">
+    <div class="chart-grid" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-title">每日總載客人數</div><div class="card-sub">四航班合計</div>
+        <canvas id="ch-overview" height="100"></canvas>
+      </div>
+    </div>
+    <div class="chart-grid chart-grid-2">
+      <div class="card"><div class="card-title">各航班月份佔比</div><div class="card-sub">旅客人數分佈</div><canvas id="ch-pie" height="200"></canvas></div>
+      <div class="card"><div class="card-title">升艙人次分佈</div><div class="card-sub">按航班統計</div><canvas id="ch-upg-pie" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-pax">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">各航班每日載客人數</div><div class="card-sub">點圖例可切換顯示</div>
+      <div class="legend" id="leg-pax"></div>
+      <canvas id="ch-pax" height="110"></canvas>
+    </div>
+    <div class="chart-grid chart-grid-2">
+      <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub">每日班</div><canvas id="ch-fm802" height="130"></canvas></div>
+      <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub">每日班（含停航）</div><canvas id="ch-mu5098" height="130"></canvas></div>
+      <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub">隔日班</div><canvas id="ch-fm820" height="130"></canvas></div>
+      <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub">隔日班</div><canvas id="ch-fm852" height="130"></canvas></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-lf">
+    <div class="card">
+      <div class="card-title">各航班載客率 (%)</div><div class="card-sub">點圖例可篩選；0% 為停航</div>
+      <div class="legend" id="leg-lf"></div>
+      <canvas id="ch-lf" height="120"></canvas>
+    </div>
+  </div>
+
+  <div class="page" id="page-upgrade">
+    <div class="chart-grid chart-grid-2" style="margin-bottom:16px">
+      <div class="card"><div class="card-title">每日升艙人次</div><div class="card-sub">各航班合計</div><canvas id="ch-upg-bar" height="200"></canvas></div>
+      <div class="card"><div class="card-title">各航班升艙堆疊</div><div class="card-sub">顏色對應航班</div><canvas id="ch-upg-stack" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">升艙明細記錄</div><div class="card-sub" id="upg-sub">來源：優惠升艙統計表</div>
+      <table class="dt"><thead><tr><th>日期</th><th>航班</th><th>航段</th><th>原艙等</th><th>升至艙等</th><th>費用 (TWD)</th></tr></thead>
+      <tbody id="upg-tbody"></tbody>
+      <tfoot><tr id="upg-tfoot-row" style="display:none"><td colspan="5" style="text-align:right;font-weight:600;color:var(--muted);font-size:12px;letter-spacing:1px;padding:12px 14px;border-top:2px solid var(--border);background:var(--surface2)">費用總計</td><td id="upg-total-fee" style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);padding:12px 14px;border-top:2px solid var(--border);background:var(--surface2)">—</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-delay">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">各航班起飛延誤（分鐘）</div>
+      <div class="card-sub">正值=延誤，負值=提早；≥30分鐘以紅色標記</div>
+      <div class="legend" id="leg-delay"></div>
+      <canvas id="ch-delay" height="120"></canvas>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">篩選：</span>
+      <button class="flight-btn active" style="--flight-color:var(--accent)" onclick="filterDelay('ALL',this)">全部</button>
+      <button class="flight-btn" style="--flight-color:var(--fm802)" onclick="filterDelay('FM802',this)">FM802</button>
+      <button class="flight-btn" style="--flight-color:var(--mu5098)" onclick="filterDelay('MU5098',this)">MU5098</button>
+      <button class="flight-btn" style="--flight-color:var(--fm820)" onclick="filterDelay('FM820',this)">FM820</button>
+      <button class="flight-btn" style="--flight-color:var(--fm852)" onclick="filterDelay('FM852',this)">FM852</button>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="delay-count-label"></span>
+    </div>
+    <div class="card">
+      <div class="card-title">起飛時間明細表</div>
+      <div class="card-sub">
+        <span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:2px;margin-right:5px;vertical-align:middle"></span>延誤≥30分&nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:#f0b42918;border:1px solid #c8880a;border-radius:2px;margin-right:5px;vertical-align:middle;margin-left:10px"></span>延誤1–29分&nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:#2e7ec715;border:1px solid #2e7ec7;border-radius:2px;margin-right:5px;vertical-align:middle;margin-left:10px"></span>準點/提早&nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:#e0e8f055;border-radius:2px;margin-right:5px;vertical-align:middle;margin-left:10px"></span>取消/未排班
+      </div>
+      <table class="dt"><thead><tr><th>日期</th><th>航班</th><th>計劃起飛</th><th>實際起飛</th><th>差異</th><th>備註</th></tr></thead>
+      <tbody id="delay-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════ CONFIG ═══════════════
+const FLIGHTS = {
+  FM802:  { label:'FM802 (TSA-PVG)',  color:'#2e7ec7', sheet:'TSA-PVG (FM802)'  },
+  MU5098: { label:'MU5098 (TSA-SHA)', color:'#e8744a', sheet:'TSA-SHA (MU5098)' },
+  FM820:  { label:'FM820 (TSA-PVG)',  color:'#f0b429', sheet:'TSA-PVG (FM820)'  },
+  FM852:  { label:'FM852 (TSA-SHA)',  color:'#9b7fe8', sheet:'TSA-SHA(FM852)'   },
+};
+const FK = Object.keys(FLIGHTS);
+
+// ═══════════════ UPLOAD ═══════════════
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const progWrap  = document.getElementById('progress-wrap');
+const progFill  = document.getElementById('progress-fill');
+const progMsg   = document.getElementById('progress-msg');
+const errMsg    = document.getElementById('error-msg');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) processFile(fileInput.files[0]); });
+
+function setProgress(pct, msg) { progWrap.style.display='block'; progFill.style.width=pct+'%'; progMsg.textContent=msg; }
+function showError(msg)        { errMsg.style.display='block'; errMsg.textContent='⚠ '+msg; progWrap.style.display='none'; }
+function clearError()          { errMsg.style.display='none'; }
+
+function processFile(file) {
+  clearError();
+  if(!/\.(xls|xlsx)$/i.test(file.name)) { showError('請上傳 .xls 或 .xlsx 格式的檔案'); return; }
+  setProgress(10,'讀取檔案…');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      setProgress(30,'解析工作表…');
+      const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
+      setProgress(60,'整理資料…');
+      const data = parseWorkbook(wb);
+      setProgress(85,'建立圖表…');
+      setTimeout(() => {
+        initDashboard(data, file.name);
+        setProgress(100,'完成');
+        setTimeout(() => {
+          document.getElementById('upload-screen').style.display = 'none';
+          document.getElementById('dashboard').style.display = 'block';
+        }, 300);
+      }, 50);
+    } catch(err) {
+      showError(err.message || '解析失敗，請確認檔案格式正確');
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════ PARSE ═══════════════
+function timeStr(v) {
+  if (v == null) return null;
+  if (v instanceof Date) return `${String(v.getHours()).padStart(2,'0')}:${String(v.getMinutes()).padStart(2,'0')}`;
+  if (typeof v === 'number') {
+    const m = Math.round(v * 1440); return `${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+  }
+  if (typeof v === 'string') { const s=v.trim(); return s||null; }
+  return null;
+}
+
+function toDateLabel(v) {
+  if (!v) return null;
+  let d;
+  if (v instanceof Date) d = v;
+  else if (typeof v === 'number') { try { const p=XLSX.SSF.parse_date_code(v); d=new Date(p.y,p.m-1,p.d); } catch(e){return null;} }
+  else if (typeof v === 'string') {
+    const m = v.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m) d = new Date(+m[1], +m[2]-1, +m[3]);
+  }
+  if (!d || isNaN(d)) return null;
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function parseFlightSheet(ws) {
+  const str  = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+  const raw  = XLSX.utils.sheet_to_json(ws, { header:1, raw:true });
+  const out  = [];
+  for (let i=3; i<str.length; i++) {
+    const sr = str[i]; const rr = raw[i] || [];
+    const dateStr = toDateLabel(rr[0]) || toDateLabel(sr[0]);
+    if (!dateStr || dateStr.includes('合')) continue;
+
+    const paxRaw  = (rr[11] != null && rr[11] !== '') ? parseFloat(rr[11]) : 0;
+    const lfRaw   = Math.round((parseFloat(rr[18])||0)*1000)/10;
+    const pax     = (paxRaw === 0 && lfRaw === 0) ? null : paxRaw;
+    const lf      = lfRaw;
+    const upgrade = parseFloat(rr[28]) || 0;
+    const remark  = rr[29] ? String(rr[29]).trim() : '';
+
+    const schedStr = timeStr(rr[1]);
+    const aRaw     = rr[2];
+    const aStr     = aRaw!=null ? String(aRaw).trim().toUpperCase() : '';
+
+    let actual='—', delayMin=null, cancelled=false;
+    if (aStr==='CNL') { cancelled=true; actual='CNL'; }
+    else if (aRaw==null||aRaw==='') { actual='—'; }
+    else {
+      actual = timeStr(aRaw) || '—';
+      if (schedStr && actual!=='—') {
+        const [sh,sm]=schedStr.split(':').map(Number);
+        const [ah,am]=actual.split(':').map(Number);
+        if (!isNaN(sh)&&!isNaN(ah)) delayMin=(ah*60+am)-(sh*60+sm);
+      }
+    }
+    out.push({ date:dateStr, pax, lf, upgrade, remark, sched:schedStr||'', actual, delayMin, cancelled });
+  }
+  return out;
+}
+
+function parseUpgradeSheet(ws) {
+  const raw = XLSX.utils.sheet_to_json(ws, { header:1, raw:true });
+  const out = [];
+  for (let i=2; i<raw.length; i++) {
+    const r=raw[i]; if(!r||!r[4]) continue;
+    const dateStr = toDateLabel(r[4]);
+    if (!dateStr) continue;
+    out.push({
+      date:  dateStr,
+      flight: r[5] ? String(r[5]).trim() : '',
+      route:  r[6] ? String(r[6]).trim() : '',
+      from:   r[7] ? String(r[7]).trim() : '?',
+      to:     r[8] ? String(r[8]).trim() : '?',
+      fee:    parseFloat(r[9])||0
+    });
+  }
+  return out;
+}
+
+function parseSummary(ws) {
+  const raw = XLSX.utils.sheet_to_json(ws, { header:1, raw:true });
+  const out = [];
+  for (let i=2; i<raw.length; i++) {
+    const r=raw[i]; if(!r||!r[0]) continue;
+    const dateStr = toDateLabel(r[0]);
+    if (!dateStr) continue;
+    out.push({ date:dateStr, total:parseFloat(r[13])||0 });
+  }
+  return out;
+}
+
+function findSheet(wb, candidates) {
+  const names = wb.SheetNames;
+  for (const c of candidates) {
+    const found = names.find(s => s.replace(/\s/g,'').toUpperCase() === c.replace(/\s/g,'').toUpperCase())
+               || names.find(s => s.toUpperCase().includes(c.replace(/[\s()]/g,'').toUpperCase()));
+    if (found) return wb.Sheets[found];
+  }
+  return null;
+}
+
+function parseWorkbook(wb) {
+  const flightData={}, delayData=[];
+  for (const [key,cfg] of Object.entries(FLIGHTS)) {
+    const ws = findSheet(wb, [cfg.sheet, key]);
+    if (!ws) throw new Error(`找不到工作表：${cfg.sheet}`);
+    const parsed = parseFlightSheet(ws);
+    flightData[key] = parsed;
+    parsed.forEach(r => { if(r.sched) delayData.push({flight:key,...r}); });
+  }
+
+  const sumWs = findSheet(wb, ['汇总','匯總']);
+  if (!sumWs) throw new Error('找不到「汇总」工作表');
+  const dailyTotal = parseSummary(sumWs);
+
+  const ugWs = findSheet(wb, ['優惠升艙統計表','升舱统计']);
+  const upgradeRecords = ugWs ? parseUpgradeSheet(ugWs) : [];
+
+  const months = [...new Set(dailyTotal.map(d=>d.date.split('/')[0]))];
+  const MN = ['','一','二','三','四','五','六','七','八','九','十','十一','十二'];
+  const monthLabel = months.map(m=>MN[+m]||m+'月').join('–')+'月';
+
+  return { flightData, dailyTotal, upgradeRecords, delayData, monthLabel };
+}
+
+// ═══════════════ CHARTS ═══════════════
+const _c={};
+function mk(id,type,data,options) {
+  if(_c[id]){_c[id].destroy();delete _c[id];}
+  const el=document.getElementById(id); if(!el) return null;
+  const ch=new Chart(el.getContext('2d'),{type,data,options});
+  _c[id]=ch; return ch;
+}
+
+Chart.defaults.color='#6b8aaa';
+Chart.defaults.borderColor='rgba(197,217,238,0.8)';
+Chart.defaults.font.family="'Noto Sans TC',sans-serif";
+const GL={color:'rgba(197,217,238,0.7)',lineWidth:1};
+const BS={x:{grid:GL,ticks:{maxRotation:0}},y:{grid:GL}};
+const TT={plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e3a5f',borderColor:'#2e5a8a',borderWidth:1,padding:10,titleFont:{family:"'Space Mono',monospace",size:11},bodyFont:{size:12}}}};
+
+function mkLegend(cid,chart,keys) {
+  const el=document.getElementById(cid); if(!el) return;
+  el.innerHTML='';
+  keys.forEach((k,i)=>{
+    const item=document.createElement('div'); item.className='legend-item';
+    item.innerHTML=`<div class="legend-dot" style="background:${FLIGHTS[k].color}"></div>${FLIGHTS[k].label}`;
+    item.addEventListener('click',()=>{ const m=chart.getDatasetMeta(i); m.hidden=!m.hidden; item.style.opacity=m.hidden?'0.35':'1'; chart.update(); });
+    el.appendChild(item);
+  });
+}
+
+// ═══════════════ DASHBOARD INIT ═══════════════
+let _delay=[];
+
+function initDashboard({flightData,dailyTotal,upgradeRecords,delayData,monthLabel},fname) {
+  _delay=delayData;
+  document.getElementById('hdr-period').textContent=monthLabel;
+  document.getElementById('hdr-file').textContent=fname;
+
+  const dates=dailyTotal.map(d=>d.date);
+
+  // KPI
+  const totPax=dailyTotal.reduce((s,d)=>s+d.total,0);
+  const peak=dailyTotal.reduce((a,b)=>b.total>a.total?b:a,{total:0,date:'—'});
+  let lfS=0,lfN=0; FK.forEach(f=>flightData[f].forEach(r=>{if(r.lf>0){lfS+=r.lf;lfN++;}}));
+  document.getElementById('kpi-total').textContent=totPax.toLocaleString();
+  document.getElementById('kpi-peak').textContent=peak.total.toLocaleString();
+  document.getElementById('kpi-peak-date').textContent=peak.date;
+  document.getElementById('kpi-upgrade').textContent=upgradeRecords.length;
+  document.getElementById('kpi-lf').textContent=lfN?(lfS/lfN).toFixed(1)+'%':'—';
+  document.getElementById('upg-sub').textContent=`來源：優惠升艙統計表（共 ${upgradeRecords.length} 筆）`;
+
+  // Reset tabs
+  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active',i===0); });
+  document.querySelectorAll('.page').forEach((p,i)=>{ p.classList.toggle('active',i===0); });
+
+  const paxOf=(f,d)=>{ const r=flightData[f].find(x=>x.date===d); return (r && r.pax != null) ? r.pax : null; };
+  const lfOf =(f,d)=>{ const r=flightData[f].find(x=>x.date===d); return r&&r.lf>0?r.lf:null; };
+  const pieOpts={cutout:'65%',plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b8aaa',boxWidth:12,padding:12,font:{size:11}}},tooltip:{...TT.plugins.tooltip}}};
+
+  // Overview
+  // 7-day moving average helper
+  function movingAvg(data, w) {
+    return data.map((_, i) => {
+      const slice = data.slice(Math.max(0, i - w + 1), i + 1).filter(v => v != null);
+      return slice.length ? Math.round(slice.reduce((a,b)=>a+b,0)/slice.length) : null;
+    });
+  }
+  const overviewRaw = dailyTotal.map(d=>d.total);
+  mk('ch-overview','line',{labels:dates,datasets:[
+    {label:'每日總載客',data:overviewRaw,borderColor:'#2e7ec7',backgroundColor:'rgba(46,126,199,.1)',fill:true,tension:.35,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:true},
+    {label:'7日均線',data:movingAvg(overviewRaw,7),borderColor:'#f0b429',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,pointHoverRadius:4,borderWidth:1.5,borderDash:[],spanGaps:true}
+  ]},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#6b8aaa',boxWidth:12,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0}}});
+  mk('ch-pie','doughnut',{labels:FK.map(f=>FLIGHTS[f].label),datasets:[{data:FK.map(f=>flightData[f].reduce((s,r)=>s+r.pax,0)),backgroundColor:FK.map(f=>FLIGHTS[f].color),borderColor:'#ffffff',borderWidth:3,hoverOffset:8}]},pieOpts);
+  mk('ch-upg-pie','doughnut',{labels:FK.map(f=>FLIGHTS[f].label),datasets:[{data:FK.map(f=>upgradeRecords.filter(r=>r.flight===f).length),backgroundColor:FK.map(f=>FLIGHTS[f].color),borderColor:'#ffffff',borderWidth:3,hoverOffset:8}]},pieOpts);
+
+  // Pax
+  const paxCh=mk('ch-pax','line',{labels:dates,datasets:FK.map(f=>({label:FLIGHTS[f].label,data:dates.map(d=>paxOf(f,d)),borderColor:FLIGHTS[f].color,backgroundColor:'transparent',tension:.3,pointRadius:2,pointHoverRadius:5,borderWidth:2,spanGaps:true}))},{...TT,scales:BS});
+  mkLegend('leg-pax',paxCh,FK);
+  ['fm802','mu5098','fm820','fm852'].forEach((id,i)=>{
+    const f=FK[i];
+    mk('ch-'+id,'bar',{labels:dates,datasets:[{label:FLIGHTS[f].label,data:dates.map(d=>paxOf(f,d)),backgroundColor:FLIGHTS[f].color+'55',borderColor:FLIGHTS[f].color,borderWidth:1,borderRadius:2,skipNull:true}]},{...TT,scales:{...BS,y:{...BS.y,min:0}}});
+  });
+
+  // LF
+  const lfDs=FK.map(f=>({label:FLIGHTS[f].label,data:dates.map(d=>lfOf(f,d)),borderColor:FLIGHTS[f].color,backgroundColor:'transparent',tension:.3,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:false}));
+  lfDs.push({label:'80%目標',data:dates.map(()=>80),borderColor:'rgba(255,255,255,.12)',borderDash:[6,4],borderWidth:1,pointRadius:0,fill:false});
+  const lfCh=mk('ch-lf','line',{labels:dates,datasets:lfDs},{...TT,scales:{...BS,y:{...BS.y,min:0,max:110,ticks:{callback:v=>v+'%'}}},plugins:{...TT.plugins,tooltip:{...TT.plugins.tooltip,callbacks:{label:ctx=>ctx.dataset.label.includes('目標')?null:` ${ctx.dataset.label}: ${ctx.parsed.y}%`}}}});
+  mkLegend('leg-lf',lfCh,FK);
+
+  // Upgrade
+  const ubd={};upgradeRecords.forEach(r=>{ubd[r.date]=(ubd[r.date]||0)+1;});
+  mk('ch-upg-bar','bar',{labels:dates,datasets:[{label:'升艙人次',data:dates.map(d=>ubd[d]||0),backgroundColor:'#2e7ec788',borderColor:'#2e7ec7',borderWidth:1,borderRadius:3}]},{...TT,scales:{...BS,y:{...BS.y,min:0,ticks:{stepSize:1}}}});
+  mk('ch-upg-stack','bar',{labels:dates,datasets:FK.map(f=>{const m={};upgradeRecords.filter(r=>r.flight===f).forEach(r=>{m[r.date]=(m[r.date]||0)+1;});return{label:FLIGHTS[f].label,data:dates.map(d=>m[d]||0),backgroundColor:FLIGHTS[f].color+'aa',borderColor:FLIGHTS[f].color,borderWidth:1,borderRadius:2,stack:'u'};})},{...TT,scales:{...BS,y:{...BS.y,stacked:true,min:0,ticks:{stepSize:1}},x:{...BS.x,stacked:true}},plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b8aaa',boxWidth:12,padding:12,font:{size:11}}},tooltip:{...TT.plugins.tooltip}}});
+
+  const ugTbody=document.getElementById('upg-tbody'); ugTbody.innerHTML='';
+  const FC={FM802:'var(--fm802)',MU5098:'var(--mu5098)',FM820:'var(--fm820)',FM852:'var(--fm852)'};
+  let totalFee=0;
+  upgradeRecords.forEach(r=>{
+    const c=FC[r.flight]||'#7a8499'; const tr=document.createElement('tr');
+    if(r.fee>0) totalFee+=r.fee;
+    tr.innerHTML=`<td><span style="font-family:'Space Mono',monospace;font-size:12px">${r.date}</span></td><td><span class="badge" style="background:${c}22;color:${c}">${r.flight}</span></td><td style="color:var(--muted)">${r.route||'—'}</td><td style="font-family:'Space Mono',monospace;font-size:12px">${r.from}</td><td style="font-family:'Space Mono',monospace;font-size:12px;color:#2e7ec7">${r.to}</td><td style="font-family:'Space Mono',monospace;font-size:12px">${r.fee>0?r.fee.toLocaleString():'—'}</td>`;
+    ugTbody.appendChild(tr);
+  });
+  const footRow=document.getElementById('upg-tfoot-row');
+  const footFee=document.getElementById('upg-total-fee');
+  if(upgradeRecords.length>0){footRow.style.display='';footFee.textContent=totalFee>0?'TWD '+totalFee.toLocaleString():'—';}
+
+  // Delay chart
+  const dDates=[...new Set(delayData.map(r=>r.date))].sort();
+  const dDs=FK.map(f=>{
+    const fd=delayData.filter(r=>r.flight===f&&!r.cancelled&&r.delayMin!=null);
+    return{label:FLIGHTS[f].label,data:fd.map(r=>({x:r.date,y:r.delayMin})),backgroundColor:fd.map(r=>r.delayMin>=30?'#ef4444cc':FLIGHTS[f].color+'bb'),borderColor:fd.map(r=>r.delayMin>=30?'#ef4444':FLIGHTS[f].color),borderWidth:1,pointRadius:6,pointHoverRadius:9,showLine:false,type:'scatter'};
+  });
+  dDs.push({label:'準點',data:dDates.map(d=>({x:d,y:0})),borderColor:'rgba(255,255,255,.1)',borderDash:[4,4],borderWidth:1,pointRadius:0,showLine:true,type:'line'});
+  dDs.push({label:'30分',data:dDates.map(d=>({x:d,y:30})),borderColor:'rgba(239,68,68,.3)',borderDash:[6,3],borderWidth:1.5,pointRadius:0,showLine:true,type:'line'});
+  const dCh=mk('ch-delay','scatter',{datasets:dDs},{scales:{x:{type:'category',labels:dDates,grid:GL,ticks:{maxRotation:0,font:{size:11}}},y:{grid:GL,title:{display:true,text:'延誤分鐘',color:'#7a8499',font:{size:11}},ticks:{callback:v=>(v>=0?'+':'')+v+' min'}}},plugins:{legend:{display:false},tooltip:{...TT.plugins.tooltip,callbacks:{label:ctx=>` ${ctx.dataset.label}  ${ctx.raw.y>=0?'+':''}${ctx.raw.y} 分鐘`}}}});
+  mkLegend('leg-delay',dCh,FK);
+  renderDelayTable('ALL');
+}
+
+// ═══════════════ DELAY TABLE ═══════════════
+function renderDelayTable(filter) {
+  const FC={FM802:'var(--fm802)',MU5098:'var(--mu5098)',FM820:'var(--fm820)',FM852:'var(--fm852)'};
+  const tbody=document.getElementById('delay-tbody'); tbody.innerHTML='';
+  const rows=filter==='ALL'?_delay:_delay.filter(r=>r.flight===filter);
+  document.getElementById('delay-count-label').textContent=`共 ${rows.length} 筆`;
+  rows.forEach(r=>{
+    const isLate30=r.delayMin!=null&&r.delayMin>=30;
+    const isLate=r.delayMin!=null&&r.delayMin>0&&r.delayMin<30;
+    const tr=document.createElement('tr');
+    if(isLate30) tr.classList.add('delay-row-late30');
+    let chip;
+    if(r.cancelled)          chip=`<span class="dchip" style="background:#e0e8f055;color:#9ab0c8">取消</span>`;
+    else if(r.actual==='—')  chip=`<span class="dchip" style="background:#e0e8f033;color:#b0bfce">未排班</span>`;
+    else if(r.delayMin==null)chip=`<span style="color:var(--muted);font-size:12px">—</span>`;
+    else if(isLate30)        chip=`<span class="dchip" style="background:#ef444418;color:#ef4444;border:1px solid #ef444466">+${r.delayMin} 分</span>`;
+    else if(isLate)          chip=`<span class="dchip" style="background:#f0b42918;color:#c8880a">+${r.delayMin} 分</span>`;
+    else if(r.delayMin<0)    chip=`<span class="dchip" style="background:#2e7ec715;color:#2e7ec7">${r.delayMin} 分</span>`;
+    else                     chip=`<span class="dchip" style="background:#2e7ec715;color:#2e7ec7">準點</span>`;
+    const rem=r.remark?`<span style="background:#f0b42912;color:#c8880a;border-radius:4px;padding:2px 8px;font-size:11px">${r.remark}</span>`:`<span style="color:#c5d9ee">—</span>`;
+    const c=FC[r.flight]||'#7a8499';
+    const aStyle=isLate30?'color:#ef4444;font-weight:700':(r.cancelled||r.actual==='—'?'color:var(--muted)':'');
+    tr.innerHTML=`<td><span style="font-family:'Space Mono',monospace;font-size:12px">${r.date}</span></td><td><span class="badge" style="background:${c}22;color:${c}">${r.flight}</span></td><td><span style="font-family:'Space Mono',monospace;font-size:13px">${r.sched}</span></td><td><span style="font-family:'Space Mono',monospace;font-size:13px;${aStyle}">${r.actual}</span></td><td>${chip}</td><td>${rem}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterDelay(f,btn) {
+  document.querySelectorAll('.flight-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderDelayTable(f);
+}
+function switchTab(name,btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); document.getElementById('page-'+name).classList.add('active');
+}
+function resetToUpload() {
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('upload-screen').style.display='flex';
+  progWrap.style.display='none'; progFill.style.width='0';
+  fileInput.value=''; clearError();
+}
+</script>
+</body>
+</html>

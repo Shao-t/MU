@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年度比較</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500&family=Space+Mono&display=swap');
+
+:root {
+  --bg: #eef2f7; --card: #fff; --border: #dde4ee;
+  --blue: #2d6bc4; --blue-light: #e8f0fb;
+  --text: #1a2535; --text-2: #4b5a6e; --text-3: #8496a9;
+  --red: #dc2626; --green: #17a34a;
+  --sans: 'Inter','Noto Sans TC',sans-serif;
+  --mono: 'Space Mono',monospace;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+/* ── Header ── */
+.db-header {
+  background: linear-gradient(135deg,#1e3a5f 0%,#24487a 100%);
+  padding: 16px 28px; display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid #16304f;
+}
+.db-header h1 { font-size: 18px; font-weight: 700; color: #fff; flex: 1; }
+.db-header h1 span { color: #7db8e8; }
+.hdr-badge { font-family: var(--mono); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 6px; padding: 4px 12px; font-size: 11px; color: #aacde8; }
+
+/* ── Upload zone ── */
+#upload-screen { padding: 32px 28px; }
+.upload-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--text-3); margin-bottom: 16px; }
+
+.drop-zone {
+  border: 2px dashed var(--border); border-radius: 12px;
+  background: var(--card); padding: 32px; text-align: center;
+  cursor: pointer; transition: border-color .2s, background .2s;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--blue); background: rgba(45,107,196,.04); }
+.drop-icon { font-size: 36px; margin-bottom: 10px; opacity: .5; }
+.drop-label { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.drop-hint { font-size: 12px; color: var(--text-3); }
+.drop-hint span { color: var(--blue); text-decoration: underline; cursor: pointer; }
+#file-input { display: none; }
+
+/* File chips */
+.file-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.file-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--blue-light); border: 1px solid #c7dbf7;
+  border-radius: 20px; padding: 4px 10px 4px 12px;
+  font-size: 12px; color: var(--blue);
+}
+.file-chip .remove { cursor: pointer; opacity: .6; font-size: 14px; line-height: 1; }
+.file-chip .remove:hover { opacity: 1; }
+.file-chip.error { background: #fee2e2; border-color: #fecaca; color: var(--red); }
+
+.action-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+button { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer; transition: all .15s; }
+.btn-primary { background: var(--blue); color: #fff; font-weight: 600; }
+.btn-primary:hover { background: #1e54a8; }
+.btn-secondary { background: #f1f5f9; color: var(--text-2); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-sm { font-size: 12px; padding: 6px 14px; }
+
+.error-msg { background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-top: 12px; display: none; }
+.progress-wrap { margin-top: 12px; display: none; }
+.progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--blue); width: 0; transition: width .3s; }
+.progress-msg { font-size: 11px; color: var(--text-3); margin-top: 6px; font-family: var(--mono); }
+
+/* ── Month selector ── */
+#month-selector { display: none; padding: 20px 28px; background: var(--card); border-bottom: 1px solid var(--border); }
+.selector-label { font-size: 12px; font-weight: 600; color: var(--text-3); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 10px; }
+.month-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.month-pill {
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  padding: 5px 14px; border-radius: 20px; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--border); color: var(--text-3);
+  transition: all .15s;
+}
+.month-pill:hover { border-color: var(--blue); color: var(--blue); }
+.month-pill.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+/* ── Dashboard ── */
+#compare-dash { display: none; padding: 22px 28px 40px; }
+
+/* KPI row */
+.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+.kpi-card { background: var(--card); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); border-top: 3px solid var(--kpi-color, var(--blue)); }
+.kpi-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.kpi-years { display: flex; gap: 12px; flex-wrap: wrap; }
+.kpi-year { display: flex; flex-direction: column; }
+.kpi-yr-label { font-size: 10px; color: var(--text-3); font-family: var(--mono); }
+.kpi-yr-val { font-size: 20px; font-weight: 700; color: var(--kpi-color, var(--text)); font-family: var(--mono); line-height: 1.1; }
+.kpi-delta { font-size: 11px; font-weight: 600; margin-top: 6px; padding: 2px 7px; border-radius: 4px; display: inline-block; }
+.kpi-delta.up { background: #dcfce7; color: var(--green); }
+.kpi-delta.down { background: #fee2e2; color: var(--red); }
+.kpi-delta.flat { background: #f1f5f9; color: var(--text-3); }
+
+/* Cards */
+.card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 16px; }
+.card-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.card-sub { font-size: 11px; color: var(--text-3); margin-bottom: 14px; }
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+
+/* Year legend */
+.year-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.yr-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+
+/* Table */
+.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dt th { text-align: left; padding: 9px 12px; background: #f8fafc; color: var(--text-3); font-size: 10px; letter-spacing: 1px; font-weight: 600; border-bottom: 1px solid var(--border); }
+.dt td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
+.dt tr:last-child td { border-bottom: none; }
+.dt tr:hover td { background: rgba(45,107,196,.02); }
+.up-chip { background: #dcfce7; color: var(--green); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); }
+.down-chip { background: #fee2e2; color: var(--red); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); }
+.flat-chip { background: #f1f5f9; color: var(--text-3); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); }
+
+/* Section header */
+.section-hdr { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+.section-hdr::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Tabs */
+.tab-row { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px; width: fit-content; margin-bottom: 16px; }
+.tab-btn { font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 6px; border: none; cursor: pointer; color: var(--text-3); background: transparent; transition: all .15s; }
+.tab-btn.active { background: var(--card); color: var(--blue); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+</style>
+</head>
+<body>
+
+<div class="db-header">
+  <h1>航線年度 <span>比較</span></h1>
+  <div class="hdr-badge" id="hdr-month">—</div>
+  <button class="btn-secondary btn-sm" onclick="resetAll()" style="margin-left:8px">↩ 重新選擇</button>
+</div>
+
+<!-- Upload -->
+<div id="upload-screen">
+  <div class="upload-title">上傳多個月份檔案</div>
+  <div class="upload-sub">同時上傳不同年份的同月份統計 XLS，系統自動從檔名讀取年月（格式：MAY2025）</div>
+
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept=".xls,.xlsx" multiple>
+    <div class="drop-icon">📂</div>
+    <div class="drop-label">拖放多個 XLS 檔案</div>
+    <div class="drop-hint">或 <span onclick="document.getElementById('file-input').click()">點擊選擇檔案</span>（可多選）</div>
+  </div>
+
+  <div class="file-list" id="file-list"></div>
+  <div class="error-msg" id="error-msg"></div>
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-msg" id="progress-msg"></div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-primary" onclick="processAll()">▶ 開始解析</button>
+    <button class="btn-secondary" onclick="clearFiles()">清除</button>
+  </div>
+</div>
+
+<!-- Month selector -->
+<div id="month-selector">
+  <div class="selector-label">選擇要比較的月份</div>
+  <div class="month-pills" id="month-pills"></div>
+</div>
+
+<!-- Compare dashboard -->
+<div id="compare-dash">
+  <div class="section-hdr">KPI 對比</div>
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('pax',this)">載客人數</button>
+    <button class="tab-btn" onclick="switchTab('lf',this)">載客率</button>
+    <button class="tab-btn" onclick="switchTab('upgrade',this)">升艙</button>
+    <button class="tab-btn" onclick="switchTab('delay',this)">準點分析</button>
+  </div>
+
+  <div id="tab-pax">
+    <div class="section-hdr">各航班每日載客 — 年度疊加</div>
+    <div class="chart-grid-2">
+      <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub" id="sub-fm802"></div><div class="year-legend" id="leg-fm802"></div><canvas id="ch-fm802" height="180"></canvas></div>
+      <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub" id="sub-mu5098"></div><div class="year-legend" id="leg-mu5098"></div><canvas id="ch-mu5098" height="180"></canvas></div>
+      <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub" id="sub-fm820"></div><div class="year-legend" id="leg-fm820"></div><canvas id="ch-fm820" height="180"></canvas></div>
+      <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub" id="sub-fm852"></div><div class="year-legend" id="leg-fm852"></div><canvas id="ch-fm852" height="180"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">月總載客 — 年度柱狀比較</div>
+      <div class="card-sub">各航班月加總，按年份並排</div>
+      <canvas id="ch-total-bar" height="80"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">每日總載客 — 年度趨勢疊加</div>
+      <div class="card-sub">四航班合計，不同年份疊加</div>
+      <div class="year-legend" id="leg-total"></div>
+      <canvas id="ch-total-trend" height="90"></canvas>
+    </div>
+  </div>
+
+  <div id="tab-lf" style="display:none">
+    <div class="section-hdr">載客率 — 年度比較</div>
+    <div class="chart-grid-2">
+      <div class="card"><div class="card-title">FM802</div><div class="year-legend" id="leg-lf-fm802"></div><canvas id="ch-lf-fm802" height="180"></canvas></div>
+      <div class="card"><div class="card-title">MU5098</div><div class="year-legend" id="leg-lf-mu5098"></div><canvas id="ch-lf-mu5098" height="180"></canvas></div>
+      <div class="card"><div class="card-title">FM820</div><div class="year-legend" id="leg-lf-fm820"></div><canvas id="ch-lf-fm820" height="180"></canvas></div>
+      <div class="card"><div class="card-title">FM852</div><div class="year-legend" id="leg-lf-fm852"></div><canvas id="ch-lf-fm852" height="180"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">平均載客率 — 年度比較</div>
+      <div class="card-sub">各航班月平均，按年份並排</div>
+      <canvas id="ch-lf-bar" height="80"></canvas>
+    </div>
+  </div>
+
+  <div id="tab-upgrade" style="display:none">
+    <div class="section-hdr">升艙 — 年度比較</div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">升艙人次 — 年度柱狀比較</div>
+      <div class="card-sub">各航班月加總</div>
+      <canvas id="ch-upg-bar" height="80"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">升艙明細對照表</div>
+      <div class="card-sub">同月份各年度升艙人次與費用</div>
+      <table class="dt" id="upg-compare-table">
+        <thead><tr><th>年份</th><th>FM802</th><th>MU5098</th><th>FM820</th><th>FM852</th><th>合計人次</th><th>費用 (TWD)</th></tr></thead>
+        <tbody id="upg-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-delay" style="display:none">
+    <div class="section-hdr">準點分析 — 年度比較</div>
+
+    <!-- KPI cards for delay -->
+    <div class="kpi-grid" id="delay-kpi-grid" style="margin-bottom:16px"></div>
+
+    <!-- Per-flight delay trend -->
+    <div class="chart-grid-2" style="margin-bottom:16px">
+      <div class="card"><div class="card-title">FM802 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-delay-fm802"></div><canvas id="ch-delay-fm802" height="180"></canvas></div>
+      <div class="card"><div class="card-title">MU5098 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-delay-mu5098"></div><canvas id="ch-delay-mu5098" height="180"></canvas></div>
+      <div class="card"><div class="card-title">FM820 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-delay-fm820"></div><canvas id="ch-delay-fm820" height="180"></canvas></div>
+      <div class="card"><div class="card-title">FM852 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-delay-fm852"></div><canvas id="ch-delay-fm852" height="180"></canvas></div>
+    </div>
+
+    <!-- Late30 rate bar -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">嚴重延誤率（≥30分）— 年度比較</div>
+      <div class="card-sub">各航班月內延誤≥30分次數佔有效班次百分比</div>
+      <canvas id="ch-late30-bar" height="80"></canvas>
+    </div>
+
+    <!-- Avg delay bar -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">平均延誤分鐘 — 年度比較</div>
+      <div class="card-sub">僅計算有起飛紀錄且非取消的班次</div>
+      <canvas id="ch-avgdelay-bar" height="80"></canvas>
+    </div>
+
+    <!-- Detail table -->
+    <div class="card">
+      <div class="card-title">準點差異對照表</div>
+      <div class="card-sub">同月份各年度逐班統計</div>
+      <table class="dt">
+        <thead><tr><th>年份</th><th>航班</th><th>有效班次</th><th>準點/提早</th><th>延誤1–29分</th><th>延誤≥30分</th><th>嚴重延誤率</th><th>平均延誤(分)</th></tr></thead>
+        <tbody id="delay-detail-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ──
+const FLIGHTS = {
+  FM802:  { label:'FM802',  color:'#2d6bc4', sheet:'TSA-PVG (FM802)'  },
+  MU5098: { label:'MU5098', color:'#e8744a', sheet:'TSA-SHA (MU5098)' },
+  FM820:  { label:'FM820',  color:'#f0b429', sheet:'TSA-PVG (FM820)'  },
+  FM852:  { label:'FM852',  color:'#9b7fe8', sheet:'TSA-SHA(FM852)'   },
+};
+const FK = Object.keys(FLIGHTS);
+
+const MONTH_MAP = {JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+const MONTH_ZH  = ['','一','二','三','四','五','六','七','八','九','十','十一','十二'];
+
+// Year colours (supports up to 6 years)
+const YEAR_COLORS = ['#2d6bc4','#e8744a','#17a34a','#9b7fe8','#f0b429','#ef4444'];
+
+// ── State ──
+let pendingFiles = [];  // {file, name, year, month} or {file, name, error}
+let allData = {};       // { 'MAY': { 2024: parsedData, 2025: parsedData } }
+let currentMonth = null;
+
+// ── Upload ──
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const errMsg    = document.getElementById('error-msg');
+const progWrap  = document.getElementById('progress-wrap');
+const progFill  = document.getElementById('progress-fill');
+const progMsg   = document.getElementById('progress-msg');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', () => addFiles(fileInput.files));
+dropZone.addEventListener('click', e => { if(e.target !== fileInput) fileInput.click(); });
+
+function parseFilename(name) {
+  // TSA 東上航航線統計表 -(MAY2025)
+  const m = name.match(/\(([A-Z]{3})(\d{4})\)/i);
+  if (!m) return null;
+  const mon = m[1].toUpperCase();
+  const year = parseInt(m[2]);
+  if (!MONTH_MAP[mon]) return null;
+  return { month: mon, year };
+}
+
+function addFiles(fileList) {
+  console.log('addFiles called, count:', fileList.length);
+  for (const f of fileList) {
+    console.log('file:', f.name);
+    if (!/\.(xls|xlsx)$/i.test(f.name)) { pendingFiles.push({ file: f, name: f.name, error: '格式不支援' }); continue; }
+    const parsed = parseFilename(f.name);
+    console.log('parsed:', parsed);
+    if (!parsed) { pendingFiles.push({ file: f, name: f.name, error: '無法讀取年月（需含 MAY2025 格式）' }); continue; }
+    const dup = pendingFiles.find(p => p.year === parsed.year && p.month === parsed.month);
+    if (dup) { pendingFiles = pendingFiles.filter(p => p !== dup); }
+    pendingFiles.push({ file: f, name: f.name, ...parsed });
+  }
+  renderFileList();
+}
+
+function renderFileList() {
+  const el = document.getElementById('file-list'); el.innerHTML = '';
+  pendingFiles.forEach((pf, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip' + (pf.error ? ' error' : '');
+    chip.innerHTML = `${pf.error ? '⚠ ' : ''}${pf.month || ''} ${pf.year || ''} <span class="remove" onclick="removeFile(${i})">×</span>`;
+    chip.title = pf.name;
+    el.appendChild(chip);
+  });
+}
+
+function removeFile(i) { pendingFiles.splice(i, 1); renderFileList(); }
+function clearFiles() { pendingFiles = []; fileInput.value = ''; document.getElementById('file-list').innerHTML = ''; errMsg.style.display = 'none'; }
+
+async function processAll() {
+  const valid = pendingFiles.filter(p => !p.error);
+  if (valid.length < 2) { errMsg.style.display = 'block'; errMsg.textContent = '⚠ 請至少上傳 2 個有效檔案'; return; }
+  errMsg.style.display = 'none';
+  progWrap.style.display = 'block';
+  allData = {};
+
+  for (let i = 0; i < valid.length; i++) {
+    const pf = valid[i];
+    const pct = Math.round((i / valid.length) * 80);
+    progFill.style.width = pct + '%';
+    progMsg.textContent = `解析 ${pf.month}${pf.year}…`;
+    try {
+      const wb = await readXLS(pf.file);
+      const data = parseWorkbook(wb);
+      if (!allData[pf.month]) allData[pf.month] = {};
+      allData[pf.month][pf.year] = data;
+    } catch(e) {
+      errMsg.style.display = 'block';
+      errMsg.textContent = `⚠ ${pf.name}：${e.message}`;
+    }
+  }
+
+  progFill.style.width = '100%';
+  progMsg.textContent = '完成';
+  setTimeout(() => { progWrap.style.display = 'none'; buildMonthSelector(); }, 400);
+}
+
+function readXLS(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => { try { res(XLSX.read(e.target.result, { type:'array', cellDates:true })); } catch(err) { rej(err); } };
+    reader.onerror = () => rej(new Error('讀取失敗'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ── Parse (same logic as dashboard) ──
+function timeStr(v) {
+  if (v == null) return null;
+  if (v instanceof Date) return `${String(v.getHours()).padStart(2,'0')}:${String(v.getMinutes()).padStart(2,'0')}`;
+  if (typeof v === 'number') { const m = Math.round(v*1440); return `${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`; }
+  if (typeof v === 'string') { const s=v.trim(); return s||null; }
+  return null;
+}
+function toDateLabel(v) {
+  if (!v) return null; let d;
+  if (v instanceof Date) d = v;
+  else if (typeof v === 'number') { try { const p=XLSX.SSF.parse_date_code(v); d=new Date(p.y,p.m-1,p.d); } catch(e){return null;} }
+  else if (typeof v === 'string') { const m=v.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) d=new Date(+m[1],+m[2]-1,+m[3]); }
+  if (!d||isNaN(d)) return null;
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseFlightSheet(ws) {
+  const str=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
+  const out=[];
+  for (let i=3;i<str.length;i++) {
+    const sr=str[i]; const rr=raw[i]||[];
+    const dateStr=toDateLabel(rr[0])||toDateLabel(sr[0]);
+    if (!dateStr||dateStr.includes('合')) continue;
+    const paxRaw=(rr[11]!=null&&rr[11]!=='')?parseFloat(rr[11]):0;
+    const lfRaw=Math.round((parseFloat(rr[18])||0)*1000)/10;
+    const pax=(paxRaw===0&&lfRaw===0)?null:paxRaw;
+    const schedStr=timeStr(rr[1]);
+    const aRaw=rr[2]; const aStr=aRaw!=null?String(aRaw).trim().toUpperCase():'';
+    let actual='—',delayMin=null,cancelled=false;
+    if(aStr==='CNL'){cancelled=true;actual='CNL';}
+    else if(aRaw==null||aRaw===''){actual='—';}
+    else{
+      actual=timeStr(aRaw)||'—';
+      if(schedStr&&actual!=='—'){
+        const[sh,sm]=schedStr.split(':').map(Number);const[ah,am]=actual.split(':').map(Number);
+        if(!isNaN(sh)&&!isNaN(ah))delayMin=(ah*60+am)-(sh*60+sm);
+      }
+    }
+    out.push({ date:dateStr, pax, lf:lfRaw, upgrade:parseFloat(rr[28])||0, sched:schedStr||'', actual, delayMin, cancelled });
+  }
+  return out;
+}
+function parseUpgradeSheet(ws) {
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); const out=[];
+  for (let i=2;i<raw.length;i++) {
+    const r=raw[i]; if(!r||!r[4]) continue;
+    const dateStr=toDateLabel(r[4]); if(!dateStr) continue;
+    out.push({ date:dateStr, flight:r[5]?String(r[5]).trim():'', fee:parseFloat(r[9])||0 });
+  }
+  return out;
+}
+function parseSummary(ws) {
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); const out=[];
+  for (let i=2;i<raw.length;i++) {
+    const r=raw[i]; if(!r||!r[0]) continue;
+    const dateStr=toDateLabel(r[0]); if(!dateStr) continue;
+    out.push({ date:dateStr, total:parseFloat(r[13])||0 });
+  }
+  return out;
+}
+function findSheet(wb,candidates) {
+  const names=wb.SheetNames;
+  for (const c of candidates) {
+    const found=names.find(s=>s.replace(/\s/g,'').toUpperCase()===c.replace(/\s/g,'').toUpperCase())||names.find(s=>s.toUpperCase().includes(c.replace(/[\s()]/g,'').toUpperCase()));
+    if (found) return wb.Sheets[found];
+  }
+  return null;
+}
+function parseWorkbook(wb) {
+  const flightData={};
+  for (const [key,cfg] of Object.entries(FLIGHTS)) {
+    const ws=findSheet(wb,[cfg.sheet,key]);
+    if (!ws) throw new Error(`找不到工作表：${cfg.sheet}`);
+    flightData[key]=parseFlightSheet(ws);
+  }
+  const sumWs=findSheet(wb,['汇总','匯總']); if(!sumWs) throw new Error('找不到「汇总」工作表');
+  const dailyTotal=parseSummary(sumWs);
+  const ugWs=findSheet(wb,['優惠升艙統計表','升舱统计']);
+  const upgradeRecords=ugWs?parseUpgradeSheet(ugWs):[];
+  return { flightData, dailyTotal, upgradeRecords };
+}
+
+// ── Month selector ──
+function buildMonthSelector() {
+  const months = Object.keys(allData).sort((a,b)=>MONTH_MAP[a]-MONTH_MAP[b]);
+  const el = document.getElementById('month-pills'); el.innerHTML = '';
+  months.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'month-pill';
+    const years = Object.keys(allData[m]).sort();
+    btn.textContent = `${m} (${years.join('/')})`;
+    btn.onclick = () => { document.querySelectorAll('.month-pill').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); selectMonth(m); };
+    el.appendChild(btn);
+  });
+  document.getElementById('month-selector').style.display = 'block';
+  // Auto-select if only one month
+  if (months.length === 1) { el.querySelector('.month-pill').click(); }
+}
+
+function selectMonth(mon) {
+  currentMonth = mon;
+  const years = Object.keys(allData[mon]).map(Number).sort();
+  const zhMon = MONTH_ZH[MONTH_MAP[mon]] || mon;
+  document.getElementById('hdr-month').textContent = `${zhMon}月 — ${years.join(' vs ')}`;
+  buildCompare(mon, years);
+  document.getElementById('compare-dash').style.display = 'block';
+}
+
+// ── Charts ──
+Chart.defaults.color = '#8496a9';
+Chart.defaults.borderColor = 'rgba(221,228,238,0.8)';
+Chart.defaults.font.family = "'Inter','Noto Sans TC',sans-serif";
+const GL = { color:'rgba(221,228,238,0.8)', lineWidth:1 };
+const BS = { x:{grid:GL,ticks:{maxRotation:0,font:{size:10}}}, y:{grid:GL} };
+const TT = { plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#1e3a5f',borderColor:'#2e5a8a',borderWidth:1,padding:10,titleFont:{family:"'Space Mono',monospace",size:11},bodyFont:{size:12}} } };
+
+const _c = {};
+function mk(id,type,data,options) {
+  if(_c[id]){_c[id].destroy();delete _c[id];}
+  const el=document.getElementById(id); if(!el) return null;
+  return (_c[id]=new Chart(el.getContext('2d'),{type,data,options}));
+}
+
+function yearColor(y, years) { return YEAR_COLORS[years.indexOf(y) % YEAR_COLORS.length]; }
+
+function mkYearLegend(elId, years) {
+  const el = document.getElementById(elId); if (!el) return; el.innerHTML = '';
+  years.forEach(y => {
+    const span = document.createElement('span');
+    span.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-3)';
+    span.innerHTML = `<span class="yr-dot" style="background:${yearColor(y,years)}"></span>${y}`;
+    el.appendChild(span);
+  });
+}
+
+function buildCompare(mon, years) {
+  const data = allData[mon]; // { year: parsedData }
+
+  // ── KPI ──
+  buildKPI(data, years);
+
+  // ── Per-flight daily pax ──
+  FK.forEach(f => {
+    const fk = f.toLowerCase().replace(/\d/g,'').replace('mu','mu').replace('fm','fm');
+    const id = 'ch-' + f.toLowerCase().replace(/\D/g,'') === 'ch-' ? 'ch-'+f.toLowerCase() : 'ch-'+f.toLowerCase();
+    buildFlightChart(`ch-${f.toLowerCase()}`, `leg-${f.toLowerCase()}`, `sub-${f.toLowerCase()}`, f, data, years);
+  });
+
+  // ── Total trend ──
+  const maxDays = Math.max(...years.map(y => data[y].dailyTotal.length));
+  const dayLabels = Array.from({length: maxDays}, (_,i) => String(i+1));
+  mk('ch-total-trend','line',{
+    labels: dayLabels,
+    datasets: years.map(y => ({
+      label: String(y),
+      data: data[y].dailyTotal.map(d=>d.total),
+      borderColor: yearColor(y,years),
+      backgroundColor: 'transparent',
+      tension:.3, pointRadius:3, pointHoverRadius:6, borderWidth:2, spanGaps:true
+    }))
+  },{...TT, plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}}, scales:{...BS,y:{...BS.y,min:0}}});
+  mkYearLegend('leg-total', years);
+
+  // ── Total bar (grouped by flight) ──
+  mk('ch-total-bar','bar',{
+    labels: FK.map(f=>FLIGHTS[f].label),
+    datasets: years.map(y => ({
+      label: String(y),
+      data: FK.map(f => data[y].flightData[f].reduce((s,r)=>s+(r.pax||0),0)),
+      backgroundColor: yearColor(y,years)+'bb',
+      borderColor: yearColor(y,years),
+      borderWidth:1, borderRadius:4
+    }))
+  },{...TT, plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}}, scales:{...BS,y:{...BS.y,min:0}}});
+
+  // ── LF charts ──
+  FK.forEach(f => buildLFChart(`ch-lf-${f.toLowerCase()}`, `leg-lf-${f.toLowerCase()}`, f, data, years));
+  mk('ch-lf-bar','bar',{
+    labels: FK.map(f=>FLIGHTS[f].label),
+    datasets: years.map(y => {
+      const avgs = FK.map(f => { const rows=data[y].flightData[f].filter(r=>r.lf>0); return rows.length?(rows.reduce((s,r)=>s+r.lf,0)/rows.length).toFixed(1):0; });
+      return { label:String(y), data:avgs, backgroundColor:yearColor(y,years)+'bb', borderColor:yearColor(y,years), borderWidth:1, borderRadius:4 };
+    })
+  },{...TT, plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}}, scales:{...BS,y:{...BS.y,min:0,max:110,ticks:{callback:v=>v+'%'}}}});
+
+  // ── Upgrade ──
+  mk('ch-upg-bar','bar',{
+    labels: FK.map(f=>FLIGHTS[f].label),
+    datasets: years.map(y => ({
+      label: String(y),
+      data: FK.map(f => data[y].upgradeRecords.filter(r=>r.flight===f).length),
+      backgroundColor: yearColor(y,years)+'bb',
+      borderColor: yearColor(y,years),
+      borderWidth:1, borderRadius:4
+    }))
+  },{...TT, plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}}, scales:{...BS,y:{...BS.y,min:0,ticks:{stepSize:1}}}});
+
+  // ── Upgrade table ──
+  buildUpgradeTable(data, years);
+
+  // ── Delay ──
+  buildDelayTab(data, years);
+}
+
+function buildFlightChart(chId, legId, subId, flight, data, years) {
+  const maxDays = Math.max(...years.map(y => data[y].flightData[flight].length));
+  const dayLabels = Array.from({length: maxDays}, (_,i) => String(i+1));
+  const subEl = document.getElementById(subId);
+  if (subEl) {
+    const totals = years.map(y => data[y].flightData[flight].reduce((s,r)=>s+(r.pax||0),0));
+    subEl.textContent = years.map((y,i)=>`${y}: ${totals[i].toLocaleString()}人`).join('　');
+  }
+  mk(chId,'line',{
+    labels: dayLabels,
+    datasets: years.map(y => ({
+      label: String(y),
+      data: data[y].flightData[flight].map(r=>r.pax),
+      borderColor: yearColor(y,years),
+      backgroundColor: 'transparent',
+      tension:.3, pointRadius:2, pointHoverRadius:5, borderWidth:2, spanGaps:true
+    }))
+  },{...TT, plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:10,font:{size:10}}}}, scales:{...BS,y:{...BS.y,min:0}}});
+  mkYearLegend(legId, years);
+}
+
+function buildLFChart(chId, legId, flight, data, years) {
+  const maxDays = Math.max(...years.map(y => data[y].flightData[flight].length));
+  const dayLabels = Array.from({length: maxDays}, (_,i) => String(i+1));
+  mk(chId,'line',{
+    labels: dayLabels,
+    datasets: years.map(y => ({
+      label: String(y),
+      data: data[y].flightData[flight].map(r=>r.lf>0?r.lf:null),
+      borderColor: yearColor(y,years),
+      backgroundColor: 'transparent',
+      tension:.3, pointRadius:2, pointHoverRadius:5, borderWidth:2, spanGaps:false
+    }))
+  },{...TT, plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:10,font:{size:10}}}}, scales:{...BS,y:{...BS.y,min:0,max:110,ticks:{callback:v=>v+'%'}}}});
+  mkYearLegend(legId, years);
+}
+
+function buildKPI(data, years) {
+  const kpiDefs = [
+    { id:'kpi-pax',   label:'月總載客',   color:'#2d6bc4', get: y=>data[y].dailyTotal.reduce((s,d)=>s+d.total,0), fmt: v=>v.toLocaleString() },
+    { id:'kpi-lf',    label:'平均載客率', color:'#9b7fe8', get: y=>{ const rs=FK.flatMap(f=>data[y].flightData[f].filter(r=>r.lf>0)); return rs.length?(rs.reduce((s,r)=>s+r.lf,0)/rs.length):0; }, fmt:v=>v.toFixed(1)+'%' },
+    { id:'kpi-upg',   label:'升艙人次',   color:'#e8744a', get: y=>data[y].upgradeRecords.length, fmt:v=>v },
+    { id:'kpi-peak',  label:'最高單日',   color:'#f0b429', get: y=>Math.max(...data[y].dailyTotal.map(d=>d.total)), fmt:v=>v.toLocaleString() },
+  ];
+  const el = document.getElementById('kpi-grid'); el.innerHTML = '';
+  kpiDefs.forEach(kpi => {
+    const vals = years.map(y => kpi.get(y));
+    const div = document.createElement('div');
+    div.className = 'kpi-card'; div.style.setProperty('--kpi-color', kpi.color);
+    let deltaHtml = '';
+    if (years.length >= 2) {
+      const v0 = vals[0], v1 = vals[vals.length-1];
+      const pct = v0 > 0 ? ((v1-v0)/v0*100).toFixed(1) : null;
+      if (pct !== null) {
+        const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+        const sign = pct > 0 ? '▲' : pct < 0 ? '▼' : '—';
+        deltaHtml = `<div class="kpi-delta ${cls}">${sign} ${Math.abs(pct)}%</div>`;
+      }
+    }
+    div.innerHTML = `<div class="kpi-label">${kpi.label}</div>
+      <div class="kpi-years">${years.map((y,i)=>`<div class="kpi-year"><div class="kpi-yr-label">${y}</div><div class="kpi-yr-val" style="color:${kpi.color}">${kpi.fmt(vals[i])}</div></div>`).join('')}</div>
+      ${deltaHtml}`;
+    el.appendChild(div);
+  });
+}
+
+function buildUpgradeTable(data, years) {
+  const tbody = document.getElementById('upg-tbody'); tbody.innerHTML = '';
+  const base = years[0];
+  years.forEach((y, yi) => {
+    const tr = document.createElement('tr');
+    const byFlight = FK.map(f => data[y].upgradeRecords.filter(r=>r.flight===f).length);
+    const total = byFlight.reduce((s,v)=>s+v,0);
+    const fee = data[y].upgradeRecords.reduce((s,r)=>s+r.fee,0);
+    let deltaHtml = '';
+    if (yi > 0) {
+      const prevTotal = FK.map(f => data[years[yi-1]].upgradeRecords.filter(r=>r.flight===f).length).reduce((s,v)=>s+v,0);
+      const diff = total - prevTotal;
+      const chip = diff > 0 ? `<span class="up-chip">+${diff}</span>` : diff < 0 ? `<span class="down-chip">${diff}</span>` : `<span class="flat-chip">—</span>`;
+      deltaHtml = ` ${chip}`;
+    }
+    tr.innerHTML = `<td style="font-family:var(--mono);font-weight:700;color:${yearColor(y,years)}">${y}</td>
+      ${byFlight.map(v=>`<td style="font-family:var(--mono)">${v||'—'}</td>`).join('')}
+      <td style="font-family:var(--mono);font-weight:700">${total}${deltaHtml}</td>
+      <td style="font-family:var(--mono)">${fee>0?'TWD '+fee.toLocaleString():'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildDelayTab(data, years) {
+  // Helper: get valid (non-cancelled, has sched) delay rows for a flight/year
+  function delayRows(y, f) {
+    return data[y].flightData[f].filter(r => !r.cancelled && r.sched && r.delayMin != null);
+  }
+
+  // ── KPI: avg delay per year (all flights combined) ──
+  const kpiEl = document.getElementById('delay-kpi-grid'); kpiEl.innerHTML = '';
+  const kpiDefs = [
+    { label:'平均延誤（全航班）', color:'#2d6bc4',
+      get: y => { const rs=FK.flatMap(f=>delayRows(y,f)); return rs.length?(rs.reduce((s,r)=>s+r.delayMin,0)/rs.length).toFixed(1):null; }, fmt:v=>v==null?'—':v+' 分' },
+    { label:'嚴重延誤率（≥30分）', color:'#dc2626',
+      get: y => { const rs=FK.flatMap(f=>delayRows(y,f)); return rs.length?((rs.filter(r=>r.delayMin>=30).length/rs.length)*100).toFixed(1):null; }, fmt:v=>v==null?'—':v+'%' },
+    { label:'準點率（≤0分）', color:'#17a34a',
+      get: y => { const rs=FK.flatMap(f=>delayRows(y,f)); return rs.length?((rs.filter(r=>r.delayMin<=0).length/rs.length)*100).toFixed(1):null; }, fmt:v=>v==null?'—':v+'%' },
+    { label:'最大延誤班次', color:'#f0b429',
+      get: y => { const rs=FK.flatMap(f=>delayRows(y,f)); return rs.length?Math.max(...rs.map(r=>r.delayMin)):null; }, fmt:v=>v==null?'—':'+'+v+' 分' },
+  ];
+  kpiDefs.forEach(kpi => {
+    const vals = years.map(y => kpi.get(y));
+    const div = document.createElement('div');
+    div.className = 'kpi-card'; div.style.setProperty('--kpi-color', kpi.color);
+    let deltaHtml = '';
+    if (years.length >= 2) {
+      const v0 = parseFloat(vals[0]), v1 = parseFloat(vals[vals.length-1]);
+      if (!isNaN(v0) && !isNaN(v1) && v0 !== 0) {
+        const diff = (v1-v0).toFixed(1);
+        // For delay metrics, lower is better; for punctuality, higher is better
+        const lowerBetter = kpi.label.includes('延誤');
+        const improved = lowerBetter ? v1 < v0 : v1 > v0;
+        const cls = improved ? 'up' : v1 === v0 ? 'flat' : 'down';
+        const sign = parseFloat(diff) > 0 ? '+' : '';
+        deltaHtml = `<div class="kpi-delta ${cls}">${sign}${diff}</div>`;
+      }
+    }
+    div.innerHTML = `<div class="kpi-label">${kpi.label}</div>
+      <div class="kpi-years">${years.map((y,i)=>`<div class="kpi-year"><div class="kpi-yr-label">${y}</div><div class="kpi-yr-val" style="color:${kpi.color}">${kpi.fmt(vals[i])}</div></div>`).join('')}</div>
+      ${deltaHtml}`;
+    kpiEl.appendChild(div);
+  });
+
+  // ── Per-flight delay trend (by day index) ──
+  FK.forEach(f => {
+    const fl = f.toLowerCase();
+    const maxDays = Math.max(...years.map(y => data[y].flightData[f].length));
+    const dayLabels = Array.from({length: maxDays}, (_,i) => String(i+1));
+    mk(`ch-delay-${fl}`, 'line', {
+      labels: dayLabels,
+      datasets: years.map(y => ({
+        label: String(y),
+        data: data[y].flightData[f].map(r => r.cancelled ? null : r.delayMin),
+        borderColor: yearColor(y, years),
+        backgroundColor: 'transparent',
+        tension: .3, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2, spanGaps: false
+      }))
+    }, { ...TT,
+      plugins: { ...TT.plugins, legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:10,font:{size:10}}},
+        annotation: undefined },
+      scales: { ...BS, y: { ...BS.y, ticks: { callback: v => (v>=0?'+':'')+v+' 分' } } }
+    });
+    mkYearLegend(`leg-delay-${fl}`, years);
+  });
+
+  // ── Late30 rate bar ──
+  mk('ch-late30-bar', 'bar', {
+    labels: FK.map(f => FLIGHTS[f].label),
+    datasets: years.map(y => ({
+      label: String(y),
+      data: FK.map(f => {
+        const rs = delayRows(y, f);
+        return rs.length ? +((rs.filter(r=>r.delayMin>=30).length/rs.length)*100).toFixed(1) : 0;
+      }),
+      backgroundColor: yearColor(y,years)+'bb', borderColor: yearColor(y,years), borderWidth:1, borderRadius:4
+    }))
+  }, { ...TT,
+    plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},
+    scales:{...BS, y:{...BS.y, min:0, ticks:{callback:v=>v+'%'}}}
+  });
+
+  // ── Avg delay bar ──
+  mk('ch-avgdelay-bar', 'bar', {
+    labels: FK.map(f => FLIGHTS[f].label),
+    datasets: years.map(y => ({
+      label: String(y),
+      data: FK.map(f => {
+        const rs = delayRows(y, f);
+        return rs.length ? +(rs.reduce((s,r)=>s+r.delayMin,0)/rs.length).toFixed(1) : 0;
+      }),
+      backgroundColor: yearColor(y,years)+'bb', borderColor: yearColor(y,years), borderWidth:1, borderRadius:4
+    }))
+  }, { ...TT,
+    plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},
+    scales:{...BS, y:{...BS.y, ticks:{callback:v=>(v>=0?'+':'')+v+' 分'}}}
+  });
+
+  // ── Detail table ──
+  const tbody = document.getElementById('delay-detail-tbody'); tbody.innerHTML = '';
+  years.forEach(y => {
+    FK.forEach(f => {
+      const rs = delayRows(y, f);
+      if (!rs.length) return;
+      const ontime  = rs.filter(r=>r.delayMin<=0).length;
+      const mild    = rs.filter(r=>r.delayMin>0&&r.delayMin<30).length;
+      const late30  = rs.filter(r=>r.delayMin>=30).length;
+      const rate    = ((late30/rs.length)*100).toFixed(1);
+      const avg     = (rs.reduce((s,r)=>s+r.delayMin,0)/rs.length).toFixed(1);
+      const rateChip = late30>0 ? `<span class="down-chip">${rate}%</span>` : `<span class="up-chip">0%</span>`;
+      const avgChip  = parseFloat(avg)>0 ? `<span class="down-chip">+${avg}</span>` : parseFloat(avg)<0 ? `<span class="up-chip">${avg}</span>` : `<span class="flat-chip">0</span>`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="font-family:var(--mono);font-weight:700;color:${yearColor(y,years)}">${y}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:${FLIGHTS[f].color};font-weight:700">${f}</td>
+        <td style="font-family:var(--mono)">${rs.length}</td>
+        <td style="font-family:var(--mono);color:var(--green)">${ontime}</td>
+        <td style="font-family:var(--mono);color:#b45309">${mild}</td>
+        <td style="font-family:var(--mono);color:var(--red)">${late30}</td>
+        <td>${rateChip}</td>
+        <td>${avgChip}</td>`;
+      tbody.appendChild(tr);
+    });
+    // Add spacer row between years
+    const spacer = document.createElement('tr');
+    spacer.innerHTML = `<td colspan="8" style="background:var(--bg);height:4px;border:none"></td>`;
+    tbody.appendChild(spacer);
+  });
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  ['pax','lf','upgrade','delay'].forEach(t=>{ const el=document.getElementById('tab-'+t); if(el) el.style.display='none'; });
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).style.display = 'block';
+}
+
+function resetAll() {
+  allData = {}; pendingFiles = []; currentMonth = null;
+  document.getElementById('compare-dash').style.display = 'none';
+  document.getElementById('month-selector').style.display = 'none';
+  document.getElementById('file-list').innerHTML = '';
+  fileInput.value = '';
+  document.getElementById('hdr-month').textContent = '—';
+  errMsg.style.display = 'none';
+  progWrap.style.display = 'none';
+}
+</script>
+</body>
+</html>
