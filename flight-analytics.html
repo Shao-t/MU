@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>東上航 航線分析儀表板</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #dce8f5;
+  --card: #ffffff;
+  --surface2: #eaf2fb;
+  --border: #c5d9ee;
+  --text: #1a2d45;
+  --text-2: #4b5a6e;
+  --text-3: #6b8aaa;
+  --blue: #2e7ec7;
+  --blue-light: #e8f0fb;
+  --red: #ef4444;
+  --green: #17a34a;
+  --amber: #f0b429;
+  --purple: #9b7fe8;
+  --orange: #e8744a;
+  --sidebar: #1e3a5f;
+  --sans: 'Inter','Noto Sans TC',sans-serif;
+  --mono: 'Space Mono',monospace;
+  --shadow: 0 1px 4px rgba(30,58,95,.07);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; font-size: 14px; }
+
+/* ══════════════════════════════════════
+   UPLOAD SCREEN
+══════════════════════════════════════ */
+#upload-screen {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 40px 20px;
+  background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(46,126,199,.08) 0%, transparent 70%);
+}
+.upload-eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 4px; color: var(--blue); text-transform: uppercase; margin-bottom: 12px; }
+.upload-title { font-size: 26px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 6px; text-align: center; }
+.upload-title span { color: var(--blue); }
+.upload-sub { font-size: 13px; color: var(--text-3); margin-bottom: 32px; text-align: center; }
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex; gap: 0; background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden; margin-bottom: 28px; width: min(520px,90vw);
+}
+.mode-btn {
+  flex: 1; padding: 12px 16px; border: none; cursor: pointer; font-family: var(--sans);
+  font-size: 13px; font-weight: 500; color: var(--text-3); background: transparent;
+  transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border-right: 1px solid var(--border);
+}
+.mode-btn:last-child { border-right: none; }
+.mode-btn.active { background: var(--blue); color: #fff; }
+.mode-btn .mode-icon { font-size: 18px; }
+.mode-btn .mode-label { font-size: 12px; font-weight: 600; }
+.mode-btn .mode-desc { font-size: 10px; opacity: .7; }
+.mode-btn.active .mode-desc { opacity: .85; }
+
+.drop-zone {
+  width: min(520px,90vw); border: 2px dashed var(--border); border-radius: 16px;
+  background: var(--card); padding: 44px 32px; text-align: center; cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--blue); background: rgba(46,126,199,.04); }
+.drop-icon { font-size: 42px; margin-bottom: 14px; opacity: .45; }
+.drop-label { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.drop-hint { font-size: 13px; color: var(--text-3); }
+.drop-hint span { color: var(--blue); text-decoration: underline; cursor: pointer; }
+#file-input { display: none; }
+
+/* File chips (compare mode) */
+.file-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; width: min(520px,90vw); }
+.file-chip {
+  display: flex; align-items: center; gap: 6px; background: var(--blue-light);
+  border: 1px solid #c7dbf7; border-radius: 20px; padding: 4px 10px 4px 12px;
+  font-size: 12px; color: var(--blue);
+}
+.file-chip.error { background: #fee2e2; border-color: #fecaca; color: var(--red); }
+.file-chip .remove { cursor: pointer; opacity: .5; font-size: 14px; line-height: 1; }
+.file-chip .remove:hover { opacity: 1; }
+
+.action-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; width: min(520px,90vw); }
+
+.progress-wrap { margin-top: 20px; width: min(520px,90vw); display: none; }
+.progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--blue); width: 0; transition: width .3s; border-radius: 2px; }
+.progress-msg { font-size: 11px; color: var(--text-3); margin-top: 6px; font-family: var(--mono); }
+.error-msg {
+  margin-top: 14px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red);
+  display: none; width: min(520px,90vw);
+}
+.format-note {
+  margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 18px; width: min(520px,90vw); font-size: 12px; color: var(--text-3); line-height: 1.9;
+}
+.format-note strong { color: var(--text); }
+
+/* ══════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════ */
+#app { display: none; }
+
+/* Header */
+header {
+  background: linear-gradient(135deg,#1e3a5f 0%,#24487a 100%);
+  border-bottom: 1px solid #16304f; padding: 16px 32px;
+  display: flex; align-items: center; gap: 14px; position: relative; overflow: hidden;
+}
+header::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(255,255,255,.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hdr-title { flex: 1; }
+.hdr-eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: #7db8e8; margin-bottom: 3px; }
+h1 { font-size: 20px; font-weight: 700; color: #fff; }
+h1 span { color: #7db8e8; }
+.hdr-badge {
+  font-family: var(--mono); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 6px; padding: 5px 12px; font-size: 11px; color: #aacde8; white-space: nowrap;
+}
+
+/* Mode switcher in header */
+.hdr-mode-switch {
+  display: flex; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px; overflow: hidden;
+}
+.hdr-mode-btn {
+  padding: 5px 14px; border: none; cursor: pointer; font-family: var(--sans); font-size: 12px;
+  font-weight: 500; color: rgba(255,255,255,.55); background: transparent; transition: all .15s;
+}
+.hdr-mode-btn.active { background: rgba(255,255,255,.18); color: #fff; }
+.hdr-mode-btn:not(.active):hover { color: rgba(255,255,255,.85); }
+
+.hdr-reset { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 6px; color: #aacde8; cursor: pointer; font-size: 12px; padding: 5px 12px; font-family: var(--sans); transition: all .15s; }
+.hdr-reset:hover { color: #fff; border-color: rgba(255,255,255,.4); }
+
+/* Month selector (compare mode) */
+#month-bar { display: none; padding: 14px 32px; background: var(--card); border-bottom: 1px solid var(--border); }
+.month-bar-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.month-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.month-pill {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px;
+  cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text-3); transition: all .15s;
+}
+.month-pill:hover { border-color: var(--blue); color: var(--blue); }
+.month-pill.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+/* KPI bar (single mode) */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.kpi { background: var(--card); padding: 16px 22px; position: relative; overflow: hidden; }
+.kpi::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--kpi-color, var(--blue)); opacity: .75; }
+.kpi-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+.kpi-value { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--kpi-color, var(--text)); line-height: 1; }
+.kpi-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+/* KPI grid (compare mode) */
+.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
+.kpi-card { background: var(--card); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); border-top: 3px solid var(--kpi-color, var(--blue)); }
+.kpi-card .kpi-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.kpi-years { display: flex; gap: 12px; flex-wrap: wrap; }
+.kpi-year { display: flex; flex-direction: column; }
+.kpi-yr-label { font-size: 10px; color: var(--text-3); font-family: var(--mono); }
+.kpi-yr-val { font-size: 18px; font-weight: 700; color: var(--kpi-color, var(--text)); font-family: var(--mono); line-height: 1.1; }
+.kpi-delta { font-size: 11px; font-weight: 600; margin-top: 6px; padding: 2px 7px; border-radius: 4px; display: inline-block; }
+.kpi-delta.up { background: #dcfce7; color: var(--green); }
+.kpi-delta.down { background: #fee2e2; color: var(--red); }
+.kpi-delta.flat { background: #f1f5f9; color: var(--text-3); }
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; padding: 0 32px; background: var(--card); border-bottom: 1px solid var(--border); }
+.tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-3); cursor: pointer; font-family: var(--sans); font-size: 13px; padding: 13px 14px 11px; transition: color .2s, border-color .2s; }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Content area */
+.content { padding: 22px 32px 48px; background: var(--bg); }
+.page { display: none; }
+.page.active { display: block; }
+
+/* Cards */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); margin-bottom: 14px; }
+.card-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--text); }
+.card-sub { font-size: 11px; color: var(--text-3); margin-bottom: 14px; }
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+/* Legend */
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); cursor: pointer; transition: color .15s; user-select: none; }
+.legend-item:hover { color: var(--text); }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.year-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.yr-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+
+/* Section header */
+.section-hdr { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.section-hdr::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Table */
+.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dt th { text-align: left; padding: 9px 12px; background: var(--surface2); color: var(--text-3); font-size: 10px; letter-spacing: 1px; font-weight: 600; border-bottom: 1px solid var(--border); }
+.dt td { padding: 9px 12px; border-bottom: 1px solid #edf2f7; }
+.dt tr:last-child td { border-bottom: none; }
+.dt tr:hover td { background: rgba(46,126,199,.03); }
+.delay-row-late30 td { background: rgba(239,68,68,.04) !important; }
+.delay-row-late30:hover td { background: rgba(239,68,68,.1) !important; }
+
+/* Chips */
+.badge { display: inline-block; font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+.dchip { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+.up-chip { background: #dcfce7; color: var(--green); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); }
+.down-chip { background: #fee2e2; color: var(--red); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); }
+.flat-chip { background: #f1f5f9; color: var(--text-3); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); }
+
+/* Flight filter buttons */
+.flight-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text-3); cursor: pointer; font-family: var(--mono); font-size: 12px; padding: 5px 12px; transition: all .15s; }
+.flight-btn.active { border-color: var(--flight-color); color: var(--flight-color); background: color-mix(in srgb, var(--flight-color) 8%, white); }
+
+/* Buttons */
+button.btn-primary { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer; background: var(--blue); color: #fff; transition: background .15s; }
+button.btn-primary:hover { background: #1f63a8; }
+button.btn-secondary { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; background: var(--card); color: var(--text-2); transition: background .15s; }
+button.btn-secondary:hover { background: var(--surface2); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* MA toggle bar */
+.ma-bar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 32px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+}
+.ma-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); }
+.ma-toggle {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 12px 4px 8px; transition: all .15s;
+  font-size: 12px; font-weight: 600; color: var(--text-3); user-select: none;
+}
+.ma-toggle.on { background: #fff8e1; border-color: #f0b429; color: #b07d00; }
+.ma-toggle-dot {
+  width: 28px; height: 16px; background: var(--border); border-radius: 8px;
+  position: relative; transition: background .15s; flex-shrink: 0;
+}
+.ma-toggle.on .ma-toggle-dot { background: #f0b429; }
+.ma-toggle-dot::after {
+  content: ''; position: absolute; width: 12px; height: 12px; background: #fff;
+  border-radius: 50%; top: 2px; left: 2px; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.ma-toggle.on .ma-toggle-dot::after { transform: translateX(12px); }
+
+/* Heatmap */
+.heatmap-wrap { overflow-x: auto; }
+.heatmap-table { border-collapse: separate; border-spacing: 3px; font-family: var(--mono); font-size: 11px; }
+.heatmap-table th { color: var(--text-3); font-weight: 600; font-size: 10px; text-align: center; padding: 0 4px 4px; white-space: nowrap; }
+.heatmap-table td.hm-cell {
+  width: 40px; height: 32px; border-radius: 4px; text-align: center; vertical-align: middle;
+  font-size: 10px; font-weight: 700; cursor: default; transition: transform .1s;
+  line-height: 1.2;
+}
+.heatmap-table td.hm-cell:hover { transform: scale(1.15); z-index: 1; position: relative; }
+.heatmap-table td.hm-label { color: var(--text-3); font-size: 10px; font-weight: 600; padding-right: 8px; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ UPLOAD SCREEN ═══════════════════ -->
+<div id="upload-screen">
+  <div class="upload-eyebrow">TSA Route Analytics</div>
+  <h2 class="upload-title">航線分析 <span>儀表板</span></h2>
+  <p class="upload-sub">上傳每月統計 XLS，自動解析生成視覺化報表</p>
+
+  <!-- Mode toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-mode-single" onclick="setMode('single')">
+      <span class="mode-icon">📊</span>
+      <span class="mode-label">單月分析</span>
+      <span class="mode-desc">上傳一個月份</span>
+    </button>
+    <button class="mode-btn" id="btn-mode-compare" onclick="setMode('compare')">
+      <span class="mode-icon">📈</span>
+      <span class="mode-label">年度比較</span>
+      <span class="mode-desc">上傳多年同月份</span>
+    </button>
+  </div>
+
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept=".xls,.xlsx">
+    <div class="drop-icon">📂</div>
+    <div class="drop-label" id="drop-label">拖放 XLS 檔案到此處</div>
+    <div class="drop-hint">或 <span onclick="document.getElementById('file-input').click()">點擊選擇檔案</span></div>
+  </div>
+
+  <div class="file-list" id="file-list"></div>
+
+  <div class="action-row" id="compare-action" style="display:none">
+    <button class="btn-primary" onclick="processCompareFiles()">▶ 開始解析</button>
+    <button class="btn-secondary" onclick="clearCompareFiles()">清除</button>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-msg" id="progress-msg">讀取中…</div>
+  </div>
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="format-note">
+    <strong>單月模式：</strong>上傳單一月份 XLS，檢視當月完整分析<br>
+    <strong>比較模式：</strong>上傳多個年份的同月份 XLS（檔名含 MAY2025 格式），比較年度差異<br>
+    <strong>資料安全：</strong>所有解析均在本機瀏覽器完成，檔案不會上傳至任何伺服器
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
+<div id="app">
+  <header>
+    <div class="hdr-title">
+      <div class="hdr-eyebrow">TSA Route Analytics</div>
+      <h1>航線分析 <span id="hdr-period">—</span></h1>
+    </div>
+    <div class="hdr-badge" id="hdr-badge">—</div>
+
+    <!-- In-app mode switch -->
+    <div class="hdr-mode-switch">
+      <button class="hdr-mode-btn" id="hdr-btn-single" onclick="switchAppMode('single')">單月</button>
+      <button class="hdr-mode-btn" id="hdr-btn-compare" onclick="switchAppMode('compare')">比較</button>
+    </div>
+
+    <button class="hdr-reset" onclick="resetAll()">↩ 重新上傳</button>
+  </header>
+
+  <!-- MA toggle bar (single + compare, pax/lf tabs) -->
+  <div class="ma-bar" id="ma-bar" style="display:none">
+    <span class="ma-label">移動平均</span>
+    <div class="ma-toggle" id="ma-toggle" onclick="toggleMA()">
+      <div class="ma-toggle-dot"></div>
+      7日均線
+    </div>
+    <span style="font-size:11px;color:var(--text-3)">顯示於所有載客量 / 載客率圖表</span>
+  </div>
+
+  <!-- Month bar (compare mode only) -->
+  <div id="month-bar">
+    <div class="month-bar-label">選擇月份</div>
+    <div class="month-pills" id="month-pills"></div>
+  </div>
+
+  <!-- KPI row (single mode) -->
+  <div class="kpi-row" id="kpi-row-single">
+    <div class="kpi" style="--kpi-color:var(--blue)"><div class="kpi-label">月總載客</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">旅客人數</div></div>
+    <div class="kpi" style="--kpi-color:var(--orange)"><div class="kpi-label">最高單日</div><div class="kpi-value" id="kpi-peak">—</div><div class="kpi-sub" id="kpi-peak-date">—</div></div>
+    <div class="kpi" style="--kpi-color:var(--blue)"><div class="kpi-label">優惠升艙</div><div class="kpi-value" id="kpi-upgrade">—</div><div class="kpi-sub">人次</div></div>
+    <div class="kpi" style="--kpi-color:var(--purple)"><div class="kpi-label">平均載客率</div><div class="kpi-value" id="kpi-lf">—</div><div class="kpi-sub">四航班加權</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tab-bar">
+    <button class="tab single-tab active" onclick="switchTab('overview',this)">總覽</button>
+    <button class="tab active-mode-tab" onclick="switchTab('pax',this)">載客人數</button>
+    <button class="tab active-mode-tab" onclick="switchTab('lf',this)">載客率</button>
+    <button class="tab active-mode-tab" onclick="switchTab('upgrade',this)">升艙</button>
+    <button class="tab active-mode-tab" onclick="switchTab('delay',this)">準點分析</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ── 總覽 (single only) ── -->
+    <div class="page active" id="page-overview">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">每日總載客人數</div><div class="card-sub">四航班合計 + 7日均線</div>
+        <canvas id="ch-overview" height="100"></canvas>
+      </div>
+      <div class="chart-grid-2">
+        <div class="card"><div class="card-title">各航班月份佔比</div><div class="card-sub">旅客人數分佈</div><canvas id="ch-pie" height="200"></canvas></div>
+        <div class="card"><div class="card-title">升艙人次分佈</div><div class="card-sub">按航班統計</div><canvas id="ch-upg-pie" height="200"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── 載客人數 ── -->
+    <div class="page" id="page-pax">
+      <!-- single sub-content -->
+      <div class="single-content">
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">各航班每日載客人數</div><div class="card-sub">點圖例可切換顯示</div>
+          <div class="legend" id="leg-pax"></div>
+          <canvas id="ch-pax" height="110"></canvas>
+        </div>
+        <div class="chart-grid-2">
+          <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub">每日班</div><canvas id="ch-s-fm802" height="130"></canvas></div>
+          <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub">每日班（含停航）</div><canvas id="ch-s-mu5098" height="130"></canvas></div>
+          <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm820" height="130"></canvas></div>
+          <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm852" height="130"></canvas></div>
+        </div>
+      </div>
+      <!-- compare sub-content -->
+      <div class="compare-content" style="display:none">
+        <div class="section-hdr">各航班年度疊加</div>
+        <div class="chart-grid-2">
+          <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub" id="sub-fm802"></div><div class="year-legend" id="leg-c-fm802"></div><canvas id="ch-c-fm802" height="180"></canvas></div>
+          <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub" id="sub-mu5098"></div><div class="year-legend" id="leg-c-mu5098"></div><canvas id="ch-c-mu5098" height="180"></canvas></div>
+          <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub" id="sub-fm820"></div><div class="year-legend" id="leg-c-fm820"></div><canvas id="ch-c-fm820" height="180"></canvas></div>
+          <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub" id="sub-fm852"></div><div class="year-legend" id="leg-c-fm852"></div><canvas id="ch-c-fm852" height="180"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">月總載客 — 年度柱狀比較</div><div class="card-sub">各航班月加總，按年份並排</div>
+          <canvas id="ch-c-total-bar" height="80"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">每日總載客 — 年度趨勢疊加</div><div class="card-sub">四航班合計</div>
+          <div class="year-legend" id="leg-c-total"></div>
+          <canvas id="ch-c-total-trend" height="90"></canvas>
+        </div>
+        <!-- compare KPI -->
+        <div class="section-hdr" style="margin-top:4px">KPI 年度對比</div>
+        <div class="kpi-grid" id="kpi-grid-compare"></div>
+      </div>
+    </div>
+
+    <!-- ── 載客率 ── -->
+    <div class="page" id="page-lf">
+      <div class="single-content">
+        <div class="card">
+          <div class="card-title">各航班載客率 (%)</div><div class="card-sub">點圖例可篩選；0% 為停航</div>
+          <div class="legend" id="leg-lf"></div>
+          <canvas id="ch-lf" height="120"></canvas>
+        </div>
+      </div>
+      <div class="compare-content" style="display:none">
+        <div class="section-hdr">載客率年度比較</div>
+        <div class="chart-grid-2">
+          <div class="card"><div class="card-title">FM802</div><div class="year-legend" id="leg-c-lf-fm802"></div><canvas id="ch-c-lf-fm802" height="180"></canvas></div>
+          <div class="card"><div class="card-title">MU5098</div><div class="year-legend" id="leg-c-lf-mu5098"></div><canvas id="ch-c-lf-mu5098" height="180"></canvas></div>
+          <div class="card"><div class="card-title">FM820</div><div class="year-legend" id="leg-c-lf-fm820"></div><canvas id="ch-c-lf-fm820" height="180"></canvas></div>
+          <div class="card"><div class="card-title">FM852</div><div class="year-legend" id="leg-c-lf-fm852"></div><canvas id="ch-c-lf-fm852" height="180"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">平均載客率 — 年度比較</div><div class="card-sub">各航班月平均，按年份並排</div>
+          <canvas id="ch-c-lf-bar" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 升艙 ── -->
+    <div class="page" id="page-upgrade">
+      <div class="single-content">
+        <div class="chart-grid-2" style="margin-bottom:14px">
+          <div class="card"><div class="card-title">每日升艙人次</div><div class="card-sub">各航班合計</div><canvas id="ch-s-upg-bar" height="200"></canvas></div>
+          <div class="card"><div class="card-title">各航班升艙堆疊</div><div class="card-sub">顏色對應航班</div><canvas id="ch-upg-stack" height="200"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">升艙明細記錄</div><div class="card-sub" id="upg-sub">來源：優惠升艙統計表</div>
+          <table class="dt"><thead><tr><th>日期</th><th>航班</th><th>航段</th><th>原艙等</th><th>升至艙等</th><th>費用 (TWD)</th></tr></thead>
+          <tbody id="upg-s-tbody"></tbody>
+          <tfoot><tr id="upg-tfoot-row" style="display:none"><td colspan="5" style="text-align:right;font-weight:600;color:var(--text-3);font-size:12px;letter-spacing:1px;padding:10px 12px;border-top:2px solid var(--border);background:var(--surface2)">費用總計</td><td id="upg-total-fee" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue);padding:10px 12px;border-top:2px solid var(--border);background:var(--surface2)">—</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="compare-content" style="display:none">
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">升艙人次 — 年度柱狀比較</div><div class="card-sub">各航班月加總</div>
+          <canvas id="ch-c-upg-bar" height="80"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">升艙明細對照表</div><div class="card-sub">同月份各年度升艙人次與費用</div>
+          <table class="dt" id="upg-c-table">
+            <thead><tr><th>年份</th><th>FM802</th><th>MU5098</th><th>FM820</th><th>FM852</th><th>合計人次</th><th>費用 (TWD)</th></tr></thead>
+            <tbody id="upg-c-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 準點分析 ── -->
+    <div class="page" id="page-delay">
+      <div class="single-content">
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">各航班起飛延誤（分鐘）</div>
+          <div class="card-sub">正值=延誤，負值=提早；≥30分鐘以紅色標記</div>
+          <div class="legend" id="leg-delay"></div>
+          <canvas id="ch-delay" height="120"></canvas>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text-3);letter-spacing:1px;text-transform:uppercase">篩選：</span>
+          <button class="flight-btn active" style="--flight-color:var(--blue)" onclick="filterDelay('ALL',this)">全部</button>
+          <button class="flight-btn" style="--flight-color:#2e7ec7" onclick="filterDelay('FM802',this)">FM802</button>
+          <button class="flight-btn" style="--flight-color:#e8744a" onclick="filterDelay('MU5098',this)">MU5098</button>
+          <button class="flight-btn" style="--flight-color:#f0b429" onclick="filterDelay('FM820',this)">FM820</button>
+          <button class="flight-btn" style="--flight-color:#9b7fe8" onclick="filterDelay('FM852',this)">FM852</button>
+          <span style="margin-left:auto;font-size:11px;color:var(--text-3)" id="delay-count-label"></span>
+        </div>
+        <div class="card">
+          <div class="card-title">起飛時間明細表</div>
+          <div class="card-sub">
+            <span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:2px;margin-right:4px;vertical-align:middle"></span>延誤≥30分&nbsp;
+            <span style="display:inline-block;width:10px;height:10px;background:#f0b42918;border:1px solid #c8880a;border-radius:2px;margin-right:4px;vertical-align:middle;margin-left:8px"></span>延誤1–29分&nbsp;
+            <span style="display:inline-block;width:10px;height:10px;background:#2e7ec715;border:1px solid #2e7ec7;border-radius:2px;margin-right:4px;vertical-align:middle;margin-left:8px"></span>準點/提早
+          </div>
+          <table class="dt"><thead><tr><th>日期</th><th>航班</th><th>計劃起飛</th><th>實際起飛</th><th>差異</th><th>備註</th></tr></thead>
+          <tbody id="delay-tbody"></tbody></table>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-title">延誤熱力圖</div>
+          <div class="card-sub">週次 × 星期，顯示平均延誤分鐘；僅計非取消有效班次</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap" id="hm-flight-bar">
+            <span style="font-size:11px;color:var(--text-3)">航班：</span>
+            <button class="flight-btn active" style="--flight-color:var(--blue)" onclick="renderHeatmap('ALL',this)">全部</button>
+            <button class="flight-btn" style="--flight-color:#2e7ec7" onclick="renderHeatmap('FM802',this)">FM802</button>
+            <button class="flight-btn" style="--flight-color:#e8744a" onclick="renderHeatmap('MU5098',this)">MU5098</button>
+            <button class="flight-btn" style="--flight-color:#f0b429" onclick="renderHeatmap('FM820',this)">FM820</button>
+            <button class="flight-btn" style="--flight-color:#9b7fe8" onclick="renderHeatmap('FM852',this)">FM852</button>
+          </div>
+          <div class="heatmap-wrap"><div id="heatmap-container"></div></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--text-3)">色階：</span>
+            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#dbeafe"></span><span style="font-size:10px;color:var(--text-3)">提早</span>
+            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#e8f5e9"></span><span style="font-size:10px;color:var(--text-3)">準點</span>
+            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#fff3e0"></span><span style="font-size:10px;color:var(--text-3)">&lt;30分</span>
+            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#ffccbc"></span><span style="font-size:10px;color:var(--text-3)">30–59分</span>
+            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#ef9a9a"></span><span style="font-size:10px;color:var(--text-3)">≥60分</span>
+            <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#f1f5f9;border:1px solid var(--border)"></span><span style="font-size:10px;color:var(--text-3)">無班</span>
+          </div>
+        </div>
+      </div>
+      <div class="compare-content" style="display:none">
+        <div class="section-hdr">準點分析 KPI</div>
+        <div class="kpi-grid" id="delay-kpi-grid" style="margin-bottom:14px"></div>
+        <div class="chart-grid-2" style="margin-bottom:14px">
+          <div class="card"><div class="card-title">FM802 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-fm802"></div><canvas id="ch-c-delay-fm802" height="180"></canvas></div>
+          <div class="card"><div class="card-title">MU5098 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-mu5098"></div><canvas id="ch-c-delay-mu5098" height="180"></canvas></div>
+          <div class="card"><div class="card-title">FM820 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-fm820"></div><canvas id="ch-c-delay-fm820" height="180"></canvas></div>
+          <div class="card"><div class="card-title">FM852 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-fm852"></div><canvas id="ch-c-delay-fm852" height="180"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">嚴重延誤率（≥30分）— 年度比較</div><div class="card-sub">各航班月內延誤≥30分次數佔有效班次百分比</div>
+          <canvas id="ch-c-late30-bar" height="80"></canvas>
+        </div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">平均延誤分鐘 — 年度比較</div><div class="card-sub">僅計算有起飛紀錄且非取消的班次</div>
+          <canvas id="ch-c-avgdelay-bar" height="80"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">準點差異對照表</div>
+          <table class="dt">
+            <thead><tr><th>年份</th><th>航班</th><th>有效班次</th><th>準點/提早</th><th>延誤1–29分</th><th>延誤≥30分</th><th>嚴重延誤率</th><th>平均延誤(分)</th></tr></thead>
+            <tbody id="delay-c-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .content -->
+</div><!-- end #app -->
+
+<script>
+// ═══════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════
+const FLIGHTS = {
+  FM802:  { label:'FM802 (TSA-PVG)',  color:'#2e7ec7', sheet:'TSA-PVG (FM802)'  },
+  MU5098: { label:'MU5098 (TSA-SHA)', color:'#e8744a', sheet:'TSA-SHA (MU5098)' },
+  FM820:  { label:'FM820 (TSA-PVG)',  color:'#f0b429', sheet:'TSA-PVG (FM820)'  },
+  FM852:  { label:'FM852 (TSA-SHA)',  color:'#9b7fe8', sheet:'TSA-SHA(FM852)'   },
+};
+const FK = Object.keys(FLIGHTS);
+const MONTH_MAP = {JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+const MONTH_ZH  = ['','一','二','三','四','五','六','七','八','九','十','十一','十二'];
+const YEAR_COLORS = ['#2d6bc4','#e8744a','#17a34a','#9b7fe8','#f0b429','#ef4444'];
+const FC = {FM802:'var(--blue)',MU5098:'var(--orange)',FM820:'var(--amber)',FM852:'var(--purple)'};
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let currentMode   = 'single';   // 'single' | 'compare'
+let singleData    = null;        // parsed single workbook
+let compareData   = {};          // { MONTH: { year: parsedData } }
+let compareFiles  = [];          // pending compare file list
+let currentCMonth = null;        // selected compare month
+let _delay = [];                 // single mode delay rows
+let showMA = false;              // MA toggle state
+const MA_CHARTS = {};            // { chartId: { rawFn, window } } for MA injection
+
+// ═══════════════════════════════════════════
+//  CHART HELPERS
+// ═══════════════════════════════════════════
+Chart.defaults.color = '#6b8aaa';
+Chart.defaults.borderColor = 'rgba(197,217,238,0.8)';
+Chart.defaults.font.family = "'Inter','Noto Sans TC',sans-serif";
+const GL  = { color:'rgba(197,217,238,0.7)', lineWidth:1 };
+const BS  = { x:{ grid:GL, ticks:{ maxRotation:0, font:{size:10} } }, y:{ grid:GL } };
+const TT  = { plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1e3a5f', borderColor:'#2e5a8a', borderWidth:1, padding:10, titleFont:{family:"'Space Mono',monospace",size:11}, bodyFont:{size:12} } } };
+const _c  = {};
+
+function mk(id, type, data, options) {
+  if (_c[id]) { _c[id].destroy(); delete _c[id]; }
+  const el = document.getElementById(id); if (!el) return null;
+  return (_c[id] = new Chart(el.getContext('2d'), {type, data, options}));
+}
+function mkLegend(cid, chart, keys) {
+  const el = document.getElementById(cid); if (!el) return; el.innerHTML = '';
+  keys.forEach((k,i) => {
+    const item = document.createElement('div'); item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${FLIGHTS[k].color}"></div>${FLIGHTS[k].label}`;
+    item.addEventListener('click', () => { const m = chart.getDatasetMeta(i); m.hidden = !m.hidden; item.style.opacity = m.hidden ? '.35' : '1'; chart.update(); });
+    el.appendChild(item);
+  });
+}
+function mkYearLegend(elId, years) {
+  const el = document.getElementById(elId); if (!el) return; el.innerHTML = '';
+  years.forEach(y => {
+    const span = document.createElement('span');
+    span.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-3)';
+    span.innerHTML = `<span class="yr-dot" style="background:${yearColor(y,years)}"></span>${y}`;
+    el.appendChild(span);
+  });
+}
+function yearColor(y, years) { return YEAR_COLORS[years.indexOf(y) % YEAR_COLORS.length]; }
+
+// ═══════════════════════════════════════════
+//  PARSE (shared)
+// ═══════════════════════════════════════════
+function timeStr(v) {
+  if (v == null) return null;
+  if (v instanceof Date) return `${String(v.getHours()).padStart(2,'0')}:${String(v.getMinutes()).padStart(2,'0')}`;
+  if (typeof v === 'number') { const m=Math.round(v*1440); return `${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`; }
+  if (typeof v === 'string') { const s=v.trim(); return s||null; }
+  return null;
+}
+function toDateLabel(v) {
+  if (!v) return null; let d;
+  if (v instanceof Date) d = v;
+  else if (typeof v === 'number') { try { const p=XLSX.SSF.parse_date_code(v); d=new Date(p.y,p.m-1,p.d); } catch(e){return null;} }
+  else if (typeof v === 'string') { const m=v.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) d=new Date(+m[1],+m[2]-1,+m[3]); }
+  if (!d||isNaN(d)) return null;
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseFlightSheet(ws) {
+  const str = XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
+  const raw = XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
+  const out = [];
+  for (let i=3; i<str.length; i++) {
+    const sr=str[i]; const rr=raw[i]||[];
+    const dateStr = toDateLabel(rr[0])||toDateLabel(sr[0]);
+    if (!dateStr||dateStr.includes('合')) continue;
+    const paxRaw = (rr[11]!=null&&rr[11]!=='')?parseFloat(rr[11]):0;
+    const lfRaw  = Math.round((parseFloat(rr[18])||0)*1000)/10;
+    const pax    = (paxRaw===0&&lfRaw===0)?null:paxRaw;
+    const remark = rr[29]?String(rr[29]).trim():'';
+    const schedStr=timeStr(rr[1]);
+    const aRaw=rr[2]; const aStr=aRaw!=null?String(aRaw).trim().toUpperCase():'';
+    let actual='—',delayMin=null,cancelled=false;
+    if (aStr==='CNL'){cancelled=true;actual='CNL';}
+    else if (aRaw==null||aRaw===''){actual='—';}
+    else {
+      actual=timeStr(aRaw)||'—';
+      if (schedStr&&actual!=='—'){
+        const [sh,sm]=schedStr.split(':').map(Number);const [ah,am]=actual.split(':').map(Number);
+        if(!isNaN(sh)&&!isNaN(ah)) delayMin=(ah*60+am)-(sh*60+sm);
+      }
+    }
+    out.push({date:dateStr,pax,lf:lfRaw,upgrade:parseFloat(rr[28])||0,remark,sched:schedStr||'',actual,delayMin,cancelled});
+  }
+  return out;
+}
+function parseUpgradeSheet(ws) {
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); const out=[];
+  for (let i=2;i<raw.length;i++){
+    const r=raw[i]; if(!r||!r[4]) continue;
+    const dateStr=toDateLabel(r[4]); if(!dateStr) continue;
+    out.push({date:dateStr,flight:r[5]?String(r[5]).trim():'',route:r[6]?String(r[6]).trim():'',from:r[7]?String(r[7]).trim():'?',to:r[8]?String(r[8]).trim():'?',fee:parseFloat(r[9])||0});
+  }
+  return out;
+}
+function parseSummary(ws) {
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); const out=[];
+  // Scan rows 0-3 for a header row containing '總計' or '总计', fallback col 13
+  let totalCol=13;
+  for(let hi=0;hi<Math.min(4,raw.length);hi++){
+    const hr=raw[hi]||[];
+    const idx=hr.findIndex(c=>c&&/總計|总计/.test(String(c)));
+    if(idx>=0){totalCol=idx;break;}
+  }
+  for (let i=2;i<raw.length;i++){
+    const r=raw[i]; if(!r||!r[0]) continue;
+    const dateStr=toDateLabel(r[0]); if(!dateStr) continue;
+    out.push({date:dateStr,total:parseFloat(r[totalCol])||0});
+  }
+  return out;
+}
+function findSheet(wb,candidates) {
+  const names=wb.SheetNames;
+  for (const c of candidates){
+    const found=names.find(s=>s.replace(/\s/g,'').toUpperCase()===c.replace(/\s/g,'').toUpperCase())||names.find(s=>s.toUpperCase().includes(c.replace(/[\s()]/g,'').toUpperCase()));
+    if(found) return wb.Sheets[found];
+  }
+  return null;
+}
+function parseWorkbook(wb, forCompare=false) {
+  const flightData={}, delayData=[];
+  for (const [key,cfg] of Object.entries(FLIGHTS)){
+    const ws=findSheet(wb,[cfg.sheet,key]);
+    if(!ws) throw new Error(`找不到工作表：${cfg.sheet}`);
+    const parsed=parseFlightSheet(ws);
+    flightData[key]=parsed;
+    parsed.forEach(r=>{if(r.sched) delayData.push({flight:key,...r});});
+  }
+  const sumWs=findSheet(wb,['汇总','匯總']); if(!sumWs) throw new Error('找不到「汇总」工作表');
+  const dailyTotal=parseSummary(sumWs);
+  const ugWs=findSheet(wb,['優惠升艙統計表','升舱统计']);
+  const upgradeRecords=ugWs?parseUpgradeSheet(ugWs):[];
+  if (forCompare) return {flightData,dailyTotal,upgradeRecords};
+  const months=[...new Set(dailyTotal.map(d=>d.date.split('/')[0]))];
+  const MN=['','一','二','三','四','五','六','七','八','九','十','十一','十二'];
+  const monthLabel=months.map(m=>MN[+m]||m+'月').join('–')+'月';
+  return {flightData,dailyTotal,upgradeRecords,delayData,monthLabel};
+}
+
+// ═══════════════════════════════════════════
+//  UPLOAD MODE TOGGLE
+// ═══════════════════════════════════════════
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-mode-single').classList.toggle('active', mode==='single');
+  document.getElementById('btn-mode-compare').classList.toggle('active', mode==='compare');
+  const dropLabel = document.getElementById('drop-label');
+  const cAction   = document.getElementById('compare-action');
+  const fileInput = document.getElementById('file-input');
+  if (mode==='single') {
+    dropLabel.textContent = '拖放 XLS 檔案到此處';
+    fileInput.multiple = false;
+    cAction.style.display = 'none';
+    document.getElementById('file-list').innerHTML = '';
+  } else {
+    dropLabel.textContent = '拖放多個 XLS 檔案（不同年份同月份）';
+    fileInput.multiple = true;
+    cAction.style.display = 'flex';
+  }
+  clearError();
+}
+
+// ═══════════════════════════════════════════
+//  UPLOAD EVENTS
+// ═══════════════════════════════════════════
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const progWrap  = document.getElementById('progress-wrap');
+const progFill  = document.getElementById('progress-fill');
+const progMsg   = document.getElementById('progress-msg');
+const errMsgEl  = document.getElementById('error-msg');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const files = e.dataTransfer.files;
+  if (currentMode==='single') { if(files[0]) processSingleFile(files[0]); }
+  else addCompareFiles(files);
+});
+fileInput.addEventListener('change', () => {
+  if (currentMode==='single') { if(fileInput.files[0]) processSingleFile(fileInput.files[0]); }
+  else addCompareFiles(fileInput.files);
+});
+dropZone.addEventListener('click', e => { if(e.target !== fileInput) fileInput.click(); });
+
+function setProgress(pct,msg){ progWrap.style.display='block'; progFill.style.width=pct+'%'; progMsg.textContent=msg; }
+function showError(msg){ errMsgEl.style.display='block'; errMsgEl.textContent='⚠ '+msg; progWrap.style.display='none'; }
+function clearError(){ errMsgEl.style.display='none'; }
+
+// ── Single mode ──
+function processSingleFile(file) {
+  clearError();
+  if(!/\.(xls|xlsx)$/i.test(file.name)){ showError('請上傳 .xls 或 .xlsx 格式的檔案'); return; }
+  setProgress(10,'讀取檔案…');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      setProgress(30,'解析工作表…');
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      setProgress(60,'整理資料…');
+      const data=parseWorkbook(wb,false);
+      setProgress(85,'建立圖表…');
+      setTimeout(()=>{
+        launchApp('single', data, file.name);
+        setProgress(100,'完成');
+        setTimeout(()=>{ document.getElementById('upload-screen').style.display='none'; document.getElementById('app').style.display='block'; },300);
+      },50);
+    } catch(err){ showError(err.message||'解析失敗'); console.error(err); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Compare mode ──
+function parseFilename(name) {
+  const m=name.match(/\(([A-Z]{3})(\d{4})\)/i);
+  if(!m) return null;
+  const mon=m[1].toUpperCase(); const year=parseInt(m[2]);
+  if(!MONTH_MAP[mon]) return null;
+  return {month:mon,year};
+}
+function addCompareFiles(fileList){
+  for(const f of fileList){
+    if(!/\.(xls|xlsx)$/i.test(f.name)){compareFiles.push({file:f,name:f.name,error:'格式不支援'});continue;}
+    const parsed=parseFilename(f.name);
+    if(!parsed){compareFiles.push({file:f,name:f.name,error:'無法讀取年月（需含 MAY2025 格式）'});continue;}
+    const dup=compareFiles.find(p=>p.year===parsed.year&&p.month===parsed.month);
+    if(dup) compareFiles=compareFiles.filter(p=>p!==dup);
+    compareFiles.push({file:f,name:f.name,...parsed});
+  }
+  renderCompareFileList();
+}
+function renderCompareFileList(){
+  const el=document.getElementById('file-list'); el.innerHTML='';
+  compareFiles.forEach((pf,i)=>{
+    const chip=document.createElement('div'); chip.className='file-chip'+(pf.error?' error':'');
+    chip.innerHTML=`${pf.error?'⚠ ':''}${pf.month||''} ${pf.year||''} <span class="remove" onclick="removeCompareFile(${i})">×</span>`;
+    chip.title=pf.name; el.appendChild(chip);
+  });
+}
+function removeCompareFile(i){ compareFiles.splice(i,1); renderCompareFileList(); }
+function clearCompareFiles(){ compareFiles=[]; fileInput.value=''; document.getElementById('file-list').innerHTML=''; clearError(); }
+
+async function processCompareFiles(){
+  const valid=compareFiles.filter(p=>!p.error);
+  if(valid.length<2){showError('請至少上傳 2 個有效檔案');return;}
+  clearError(); setProgress(0,'開始解析…');
+  compareData={};
+  for(let i=0;i<valid.length;i++){
+    const pf=valid[i];
+    setProgress(Math.round((i/valid.length)*85),`解析 ${pf.month}${pf.year}…`);
+    try {
+      const wb=await readXLS(pf.file);
+      const data=parseWorkbook(wb,true);
+      if(!compareData[pf.month]) compareData[pf.month]={};
+      compareData[pf.month][pf.year]=data;
+    } catch(e){ showError(`${pf.name}：${e.message}`); return; }
+  }
+  setProgress(100,'完成');
+  setTimeout(()=>{
+    progWrap.style.display='none';
+    launchApp('compare', null, null);
+    document.getElementById('upload-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+  },400);
+}
+function readXLS(file){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{try{res(XLSX.read(e.target.result,{type:'array',cellDates:true}));}catch(err){rej(err);}};
+    reader.onerror=()=>rej(new Error('讀取失敗'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  LAUNCH APP
+// ═══════════════════════════════════════════
+function launchApp(mode, data, fname) {
+  currentMode = mode;
+  singleData  = data;
+
+  // Header mode buttons
+  document.getElementById('hdr-btn-single').classList.toggle('active', mode==='single');
+  document.getElementById('hdr-btn-compare').classList.toggle('active', mode==='compare');
+
+  // Overview tab: single only
+  const overviewTab = document.querySelector('.single-tab');
+  overviewTab.style.display = mode==='single' ? '' : 'none';
+
+  if (mode==='single') {
+    document.getElementById('kpi-row-single').style.display='grid';
+    document.getElementById('month-bar').style.display='none';
+    document.getElementById('hdr-period').textContent = data.monthLabel;
+    document.getElementById('hdr-badge').textContent = fname;
+    initSingleMode(data);
+    // reset to overview tab
+    switchTab('overview', document.querySelector('.single-tab'));
+  } else {
+    document.getElementById('kpi-row-single').style.display='none';
+    buildMonthBar();
+    // switch to pax tab (first real data tab)
+    switchTab('pax', document.querySelectorAll('.tab')[1]);
+  }
+}
+
+// In-app mode switch (reuses already-loaded data)
+function switchAppMode(mode) {
+  if (mode === currentMode) return;
+  // Check if target data exists
+  if (mode==='single' && !singleData) { alert('請先上傳單月資料'); return; }
+  if (mode==='compare' && Object.keys(compareData).length===0) { alert('請先上傳比較資料'); return; }
+  launchApp(mode, singleData, document.getElementById('hdr-badge').textContent);
+}
+
+// ═══════════════════════════════════════════
+//  SHARED UI
+// ═══════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('page-'+name).classList.add('active');
+  // Show MA bar only on pax and lf tabs
+  const maBar = document.getElementById('ma-bar');
+  maBar.style.display = (name==='pax'||name==='lf') ? 'flex' : 'none';
+  // Show correct sub-content
+  document.querySelectorAll('.single-content').forEach(el=>el.style.display = currentMode==='single' ? '' : 'none');
+  document.querySelectorAll('.compare-content').forEach(el=>el.style.display = currentMode==='compare' ? '' : 'none');
+}
+
+// ── MA toggle ──
+function toggleMA() {
+  showMA = !showMA;
+  const tog = document.getElementById('ma-toggle');
+  tog.classList.toggle('on', showMA);
+  applyMAToAllCharts();
+}
+
+function movingAvg(data, w) {
+  return data.map((_,i) => {
+    const s = data.slice(Math.max(0,i-w+1), i+1).filter(v=>v!=null);
+    return s.length ? Math.round(s.reduce((a,b)=>a+b,0)/s.length*10)/10 : null;
+  });
+}
+
+function applyMAToAllCharts() {
+  Object.entries(MA_CHARTS).forEach(([id, cfg]) => {
+    const chart = _c[id]; if (!chart) return;
+    // Remove existing MA datasets (marked by isMA flag)
+    const keep = chart.data.datasets.filter(d=>!d._isMA);
+    if (showMA) {
+      cfg.forEach(mc => {
+        const maData = movingAvg(mc.rawData, 7);
+        keep.push({
+          label: mc.label+' 7日均',
+          data: maData,
+          borderColor: mc.color,
+          backgroundColor: 'transparent',
+          borderDash: [5,3],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: .4,
+          spanGaps: true,
+          _isMA: true,
+        });
+      });
+    }
+    chart.data.datasets = keep;
+    chart.update('none');
+  });
+}
+
+function resetAll(){
+  singleData=null; compareData={}; compareFiles=[]; currentCMonth=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('upload-screen').style.display='flex';
+  document.getElementById('file-list').innerHTML=''; fileInput.value='';
+  progWrap.style.display='none'; progFill.style.width='0'; clearError();
+}
+
+// ═══════════════════════════════════════════
+//  SINGLE MODE
+// ═══════════════════════════════════════════
+function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLabel}) {
+  _delay = delayData;
+  const dates = dailyTotal.map(d=>d.date);
+
+  // KPI
+  const totPax=dailyTotal.reduce((s,d)=>s+d.total,0);
+  const peak=dailyTotal.reduce((a,b)=>b.total>a.total?b:a,{total:0,date:'—'});
+  let lfS=0,lfN=0; FK.forEach(f=>flightData[f].forEach(r=>{if(r.lf>0){lfS+=r.lf;lfN++;}}));
+  document.getElementById('kpi-total').textContent=totPax.toLocaleString();
+  document.getElementById('kpi-peak').textContent=peak.total.toLocaleString();
+  document.getElementById('kpi-peak-date').textContent=peak.date;
+  document.getElementById('kpi-upgrade').textContent=upgradeRecords.length;
+  document.getElementById('kpi-lf').textContent=lfN?(lfS/lfN).toFixed(1)+'%':'—';
+  document.getElementById('upg-sub').textContent=`來源：優惠升艙統計表（共 ${upgradeRecords.length} 筆）`;
+
+  const paxOf=(f,d)=>{ const r=flightData[f].find(x=>x.date===d); return (r&&r.pax!=null)?r.pax:null; };
+  const lfOf =(f,d)=>{ const r=flightData[f].find(x=>x.date===d); return r&&r.lf>0?r.lf:null; };
+  const pieOpts={cutout:'65%',plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b8aaa',boxWidth:12,padding:12,font:{size:11}}},tooltip:{...TT.plugins.tooltip}}};
+
+  // Overview
+  function movingAvg(data,w){ return data.map((_,i)=>{ const s=data.slice(Math.max(0,i-w+1),i+1).filter(v=>v!=null); return s.length?Math.round(s.reduce((a,b)=>a+b,0)/s.length):null; }); }
+  const rawOv=dailyTotal.map(d=>d.total);
+  mk('ch-overview','line',{labels:dates,datasets:[
+    {label:'每日總載客',data:rawOv,borderColor:'#2e7ec7',backgroundColor:'rgba(46,126,199,.1)',fill:true,tension:.35,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:true},
+    {label:'7日均線',data:movingAvg(rawOv,7),borderColor:'#f0b429',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:1.5,spanGaps:true}
+  ]},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#6b8aaa',boxWidth:12,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0}}});
+  mk('ch-pie','doughnut',{labels:FK.map(f=>FLIGHTS[f].label),datasets:[{data:FK.map(f=>flightData[f].reduce((s,r)=>s+(r.pax||0),0)),backgroundColor:FK.map(f=>FLIGHTS[f].color),borderColor:'#fff',borderWidth:3,hoverOffset:8}]},pieOpts);
+  mk('ch-upg-pie','doughnut',{labels:FK.map(f=>FLIGHTS[f].label),datasets:[{data:FK.map(f=>upgradeRecords.filter(r=>r.flight===f).length),backgroundColor:FK.map(f=>FLIGHTS[f].color),borderColor:'#fff',borderWidth:3,hoverOffset:8}]},pieOpts);
+
+  // Pax
+  const paxCh=mk('ch-pax','line',{labels:dates,datasets:FK.map(f=>({label:FLIGHTS[f].label,data:dates.map(d=>paxOf(f,d)),borderColor:FLIGHTS[f].color,backgroundColor:'transparent',tension:.3,pointRadius:2,pointHoverRadius:5,borderWidth:2,spanGaps:true}))},{...TT,scales:BS});
+  mkLegend('leg-pax',paxCh,FK);
+  // Register ch-pax for MA
+  MA_CHARTS['ch-pax'] = FK.map(f=>({label:FLIGHTS[f].label,color:FLIGHTS[f].color,rawData:dates.map(d=>paxOf(f,d))}));
+  ['fm802','mu5098','fm820','fm852'].forEach((id,i)=>{
+    const f=FK[i];
+    const rawD=dates.map(d=>paxOf(f,d));
+    mk('ch-s-'+id,'bar',{labels:dates,datasets:[{label:FLIGHTS[f].label,data:rawD,backgroundColor:FLIGHTS[f].color+'55',borderColor:FLIGHTS[f].color,borderWidth:1,borderRadius:2,skipNull:true}]},{...TT,scales:{...BS,y:{...BS.y,min:0}}});
+    MA_CHARTS['ch-s-'+id]=[{label:FLIGHTS[f].label,color:FLIGHTS[f].color,rawData:rawD}];
+  });
+  // Re-apply MA if it was on
+  if(showMA) applyMAToAllCharts();
+
+  // LF
+  const lfDs=FK.map(f=>({label:FLIGHTS[f].label,data:dates.map(d=>lfOf(f,d)),borderColor:FLIGHTS[f].color,backgroundColor:'transparent',tension:.3,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:false}));
+  lfDs.push({label:'80%目標',data:dates.map(()=>80),borderColor:'rgba(255,255,255,.12)',borderDash:[6,4],borderWidth:1,pointRadius:0,fill:false});
+  const lfCh=mk('ch-lf','line',{labels:dates,datasets:lfDs},{...TT,scales:{...BS,y:{...BS.y,min:0,max:110,ticks:{callback:v=>v+'%'}}},plugins:{...TT.plugins,tooltip:{...TT.plugins.tooltip,callbacks:{label:ctx=>ctx.dataset.label.includes('目標')?null:` ${ctx.dataset.label}: ${ctx.parsed.y}%`}}}});
+  mkLegend('leg-lf',lfCh,FK);
+  MA_CHARTS['ch-lf']=FK.map(f=>({label:FLIGHTS[f].label,color:FLIGHTS[f].color,rawData:dates.map(d=>lfOf(f,d))}));
+  if(showMA) applyMAToAllCharts();
+
+  // Upgrade
+  const ubd={}; upgradeRecords.forEach(r=>{ubd[r.date]=(ubd[r.date]||0)+1;});
+  mk('ch-s-upg-bar','bar',{labels:dates,datasets:[{label:'升艙人次',data:dates.map(d=>ubd[d]||0),backgroundColor:'#2e7ec788',borderColor:'#2e7ec7',borderWidth:1,borderRadius:3}]},{...TT,scales:{...BS,y:{...BS.y,min:0,ticks:{stepSize:1}}}});
+  mk('ch-upg-stack','bar',{labels:dates,datasets:FK.map(f=>{const m={};upgradeRecords.filter(r=>r.flight===f).forEach(r=>{m[r.date]=(m[r.date]||0)+1;});return{label:FLIGHTS[f].label,data:dates.map(d=>m[d]||0),backgroundColor:FLIGHTS[f].color+'aa',borderColor:FLIGHTS[f].color,borderWidth:1,borderRadius:2,stack:'u'};})},{...TT,scales:{...BS,y:{...BS.y,stacked:true,min:0,ticks:{stepSize:1}},x:{...BS.x,stacked:true}},plugins:{legend:{display:true,position:'bottom',labels:{color:'#6b8aaa',boxWidth:12,padding:12,font:{size:11}}},tooltip:{...TT.plugins.tooltip}}});
+  const ugTbody=document.getElementById('upg-s-tbody'); ugTbody.innerHTML=''; let totalFee=0;
+  upgradeRecords.forEach(r=>{
+    const c=FC[r.flight]||'#7a8499'; const tr=document.createElement('tr');
+    if(r.fee>0) totalFee+=r.fee;
+    tr.innerHTML=`<td><span style="font-family:var(--mono);font-size:12px">${r.date}</span></td><td><span class="badge" style="background:${c}22;color:${c}">${r.flight}</span></td><td style="color:var(--text-3)">${r.route||'—'}</td><td style="font-family:var(--mono);font-size:12px">${r.from}</td><td style="font-family:var(--mono);font-size:12px;color:var(--blue)">${r.to}</td><td style="font-family:var(--mono);font-size:12px">${r.fee>0?r.fee.toLocaleString():'—'}</td>`;
+    ugTbody.appendChild(tr);
+  });
+  const footRow=document.getElementById('upg-tfoot-row'); const footFee=document.getElementById('upg-total-fee');
+  if(upgradeRecords.length>0){footRow.style.display='';footFee.textContent=totalFee>0?'TWD '+totalFee.toLocaleString():'—';}
+
+  // Delay scatter
+  const dDates=[...new Set(delayData.map(r=>r.date))].sort();
+  const dDs=FK.map(f=>{
+    const fd=delayData.filter(r=>r.flight===f&&!r.cancelled&&r.delayMin!=null);
+    return{label:FLIGHTS[f].label,data:fd.map(r=>({x:r.date,y:r.delayMin})),backgroundColor:fd.map(r=>r.delayMin>=30?'#ef4444cc':FLIGHTS[f].color+'bb'),borderColor:fd.map(r=>r.delayMin>=30?'#ef4444':FLIGHTS[f].color),borderWidth:1,pointRadius:6,pointHoverRadius:9,showLine:false,type:'scatter'};
+  });
+  dDs.push({label:'準點',data:dDates.map(d=>({x:d,y:0})),borderColor:'rgba(255,255,255,.1)',borderDash:[4,4],borderWidth:1,pointRadius:0,showLine:true,type:'line'});
+  dDs.push({label:'30分',data:dDates.map(d=>({x:d,y:30})),borderColor:'rgba(239,68,68,.3)',borderDash:[6,3],borderWidth:1.5,pointRadius:0,showLine:true,type:'line'});
+  const dCh=mk('ch-delay','scatter',{datasets:dDs},{scales:{x:{type:'category',labels:dDates,grid:GL,ticks:{maxRotation:0,font:{size:11}}},y:{grid:GL,title:{display:true,text:'延誤分鐘',color:'#6b8aaa',font:{size:11}},ticks:{callback:v=>(v>=0?'+':'')+v+' min'}}},plugins:{legend:{display:false},tooltip:{...TT.plugins.tooltip,callbacks:{label:ctx=>` ${ctx.dataset.label}  ${ctx.raw.y>=0?'+':''}${ctx.raw.y} 分鐘`}}}});
+  mkLegend('leg-delay',dCh,FK);
+  renderDelayTable('ALL');
+  renderHeatmap('ALL', document.querySelector('#hm-flight-bar .flight-btn'));
+}
+
+function renderHeatmap(flightFilter, btn) {
+  // Toggle active button in heatmap bar
+  if(btn) { document.querySelectorAll('#hm-flight-bar .flight-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  const rows = (flightFilter==='ALL' ? _delay : _delay.filter(r=>r.flight===flightFilter))
+    .filter(r=>!r.cancelled && r.delayMin!=null);
+  // Build date->day mapping to assign week/weekday
+  // Parse MM/DD date strings, group by ISO week within the month
+  const WD_ZH = ['日','一','二','三','四','五','六']; // 0=Sun
+  // Collect unique dates, sort
+  const allDates = [...new Set(rows.map(r=>r.date))].sort();
+  if(!allDates.length){ document.getElementById('heatmap-container').innerHTML='<div style="color:var(--text-3);font-size:13px;padding:12px 0">無有效延誤資料</div>'; return; }
+  // Infer year from context (not stored in row): use current year as fallback
+  // date format MM/DD
+  function parseDate(s){const[m,d]=s.split('/').map(Number); const y=new Date().getFullYear(); return new Date(y,m-1,d);}
+  // weekday: 0=Sun…6=Sat. week index: sequential week within displayed dates
+  // Assign week number as "which week of the month" (1-based, starting from first date's Monday)
+  function weekIndex(d){ return Math.floor((d.getDate()-1)/7); }
+  // Build grid: rows=weekday 0-6, cols=week 0-4
+  const grid={}; // {weekday: {weekIdx: [delayMin,...]}}
+  rows.forEach(r=>{
+    const d=parseDate(r.date);
+    const wd=d.getDay();
+    const wi=weekIndex(d);
+    if(!grid[wd]) grid[wd]={};
+    if(!grid[wd][wi]) grid[wd][wi]=[];
+    grid[wd][wi].push(r.delayMin);
+  });
+  const maxWk=Math.max(...Object.values(grid).flatMap(wg=>Object.keys(wg).map(Number)));
+  const weekCols=Array.from({length:maxWk+1},(_,i)=>i+1); // 1-based display
+
+  function hmColor(avg){
+    if(avg==null) return {bg:'#f1f5f9',fg:'#b0bfce'};
+    if(avg<0)     return {bg:'#dbeafe',fg:'#1d4ed8'};
+    if(avg<=5)    return {bg:'#e8f5e9',fg:'#2e7d32'};
+    if(avg<=29)   return {bg:'#fff3e0',fg:'#e65100'};
+    if(avg<=59)   return {bg:'#ffccbc',fg:'#bf360c'};
+                  return {bg:'#ef9a9a',fg:'#b71c1c'};
+  }
+
+  let html='<table class="heatmap-table"><thead><tr><th></th>';
+  weekCols.forEach(w=>{ html+=`<th>第${w}週</th>`; });
+  html+='</tr></thead><tbody>';
+  for(let wd=1;wd<=7;wd++){ // Mon-Sun then wrap Sun
+    const wdIdx=wd%7; // 1=Mon…6=Sat,0=Sun
+    html+=`<tr><td class="hm-label">週${WD_ZH[wdIdx]}</td>`;
+    weekCols.forEach((_,wi)=>{
+      const vals=grid[wdIdx]&&grid[wdIdx][wi];
+      const avg=vals&&vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):null;
+      const {bg,fg}=hmColor(avg);
+      const txt=avg==null?'—':(avg>=0?'+':'')+avg;
+      const title=vals?`${vals.length}班次，均延 ${avg}分`:' 無班次';
+      html+=`<td class="hm-cell" style="background:${bg};color:${fg}" title="${title}">${txt}<br><span style="font-size:9px;opacity:.65">${vals?vals.length+'班':''}</span></td>`;
+    });
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  document.getElementById('heatmap-container').innerHTML=html;
+}
+
+function renderDelayTable(filter) {
+  const tbody=document.getElementById('delay-tbody'); tbody.innerHTML='';
+  const rows=filter==='ALL'?_delay:_delay.filter(r=>r.flight===filter);
+  document.getElementById('delay-count-label').textContent=`共 ${rows.length} 筆`;
+  rows.forEach(r=>{
+    const isLate30=r.delayMin!=null&&r.delayMin>=30;
+    const isLate=r.delayMin!=null&&r.delayMin>0&&r.delayMin<30;
+    const tr=document.createElement('tr'); if(isLate30) tr.classList.add('delay-row-late30');
+    const c=FC[r.flight]||'#7a8499';
+    let chip;
+    if(r.cancelled)         chip=`<span class="dchip" style="background:#e0e8f055;color:#9ab0c8">取消</span>`;
+    else if(r.actual==='—') chip=`<span class="dchip" style="background:#e0e8f033;color:#b0bfce">未排班</span>`;
+    else if(r.delayMin==null)chip=`<span style="color:var(--text-3);font-size:12px">—</span>`;
+    else if(isLate30)       chip=`<span class="dchip" style="background:#ef444418;color:#ef4444;border:1px solid #ef444466">+${r.delayMin} 分</span>`;
+    else if(isLate)         chip=`<span class="dchip" style="background:#f0b42918;color:#c8880a">+${r.delayMin} 分</span>`;
+    else if(r.delayMin<0)   chip=`<span class="dchip" style="background:#2e7ec715;color:#2e7ec7">${r.delayMin} 分</span>`;
+    else                    chip=`<span class="dchip" style="background:#2e7ec715;color:#2e7ec7">準點</span>`;
+    const rem=r.remark?`<span style="background:#f0b42912;color:#c8880a;border-radius:4px;padding:2px 8px;font-size:11px">${r.remark}</span>`:`<span style="color:#c5d9ee">—</span>`;
+    const aStyle=isLate30?'color:#ef4444;font-weight:700':(r.cancelled||r.actual==='—'?'color:var(--text-3)':'');
+    tr.innerHTML=`<td><span style="font-family:var(--mono);font-size:12px">${r.date}</span></td><td><span class="badge" style="background:${c}22;color:${c}">${r.flight}</span></td><td><span style="font-family:var(--mono);font-size:13px">${r.sched}</span></td><td><span style="font-family:var(--mono);font-size:13px;${aStyle}">${r.actual}</span></td><td>${chip}</td><td>${rem}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function filterDelay(f,btn){ document.querySelectorAll('.flight-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderDelayTable(f); renderHeatmap(f,null); }
+
+// ═══════════════════════════════════════════
+//  COMPARE MODE
+// ═══════════════════════════════════════════
+function buildMonthBar(){
+  const months=Object.keys(compareData).sort((a,b)=>MONTH_MAP[a]-MONTH_MAP[b]);
+  const el=document.getElementById('month-pills'); el.innerHTML='';
+  months.forEach(m=>{
+    const btn=document.createElement('button'); btn.className='month-pill';
+    const years=Object.keys(compareData[m]).sort();
+    btn.textContent=`${m} (${years.join('/')})`;
+    btn.onclick=()=>{ document.querySelectorAll('.month-pill').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); selectCompareMonth(m); };
+    el.appendChild(btn);
+  });
+  document.getElementById('month-bar').style.display='block';
+  const zhMon=MONTH_ZH[MONTH_MAP[months[0]]]||months[0];
+  document.getElementById('hdr-period').textContent=zhMon+'月 比較';
+  document.getElementById('hdr-badge').textContent=`${Object.values(compareData[months[0]]).length} 個年份`;
+  if(months.length===1) el.querySelector('.month-pill').click();
+}
+
+function selectCompareMonth(mon){
+  currentCMonth=mon;
+  const years=Object.keys(compareData[mon]).map(Number).sort();
+  const zhMon=MONTH_ZH[MONTH_MAP[mon]]||mon;
+  document.getElementById('hdr-period').textContent=`${zhMon}月 — ${years.join(' vs ')}`;
+  document.getElementById('hdr-badge').textContent=`年度比較`;
+  buildCompareCharts(mon,years);
+}
+
+function buildCompareCharts(mon, years){
+  const data=compareData[mon];
+
+  // ── Pax: per-flight overlays ──
+  FK.forEach(f=>{
+    const maxDays=Math.max(...years.map(y=>data[y].flightData[f].length));
+    const dayLabels=Array.from({length:maxDays},(_,i)=>String(i+1));
+    const subEl=document.getElementById('sub-'+f.toLowerCase());
+    if(subEl){ const totals=years.map(y=>data[y].flightData[f].reduce((s,r)=>s+(r.pax||0),0)); subEl.textContent=years.map((y,i)=>`${y}: ${totals[i].toLocaleString()}人`).join('　'); }
+    mk('ch-c-'+f.toLowerCase(),'line',{labels:dayLabels,datasets:years.map(y=>({label:String(y),data:data[y].flightData[f].map(r=>r.pax),borderColor:yearColor(y,years),backgroundColor:'transparent',tension:.3,pointRadius:2,pointHoverRadius:5,borderWidth:2,spanGaps:true}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:10,font:{size:10}}}},scales:{...BS,y:{...BS.y,min:0}}});
+    mkYearLegend('leg-c-'+f.toLowerCase(),years);
+    MA_CHARTS['ch-c-'+f.toLowerCase()]=years.map(y=>({label:String(y),color:yearColor(y,years),rawData:data[y].flightData[f].map(r=>r.pax)}));
+  });
+
+  // Total trend + bar
+  const maxDays=Math.max(...years.map(y=>data[y].dailyTotal.length));
+  const dayLabels=Array.from({length:maxDays},(_,i)=>String(i+1));
+  mk('ch-c-total-trend','line',{labels:dayLabels,datasets:years.map(y=>({label:String(y),data:data[y].dailyTotal.map(d=>d.total),borderColor:yearColor(y,years),backgroundColor:'transparent',tension:.3,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:true}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0}}});
+  mkYearLegend('leg-c-total',years);
+  MA_CHARTS['ch-c-total-trend']=years.map(y=>({label:String(y),color:yearColor(y,years),rawData:data[y].dailyTotal.map(d=>d.total)}));
+  mk('ch-c-total-bar','bar',{labels:FK.map(f=>FLIGHTS[f].label),datasets:years.map(y=>({label:String(y),data:FK.map(f=>data[y].flightData[f].reduce((s,r)=>s+(r.pax||0),0)),backgroundColor:yearColor(y,years)+'bb',borderColor:yearColor(y,years),borderWidth:1,borderRadius:4}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0}}});
+  if(showMA) applyMAToAllCharts();
+
+  // KPI grid
+  const kpiDefs=[
+    {label:'月總載客',color:'#2d6bc4',get:y=>data[y].dailyTotal.reduce((s,d)=>s+d.total,0),fmt:v=>v.toLocaleString()},
+    {label:'平均載客率',color:'#9b7fe8',get:y=>{const rs=FK.flatMap(f=>data[y].flightData[f].filter(r=>r.lf>0));return rs.length?(rs.reduce((s,r)=>s+r.lf,0)/rs.length):0;},fmt:v=>v.toFixed(1)+'%'},
+    {label:'升艙人次',color:'#e8744a',get:y=>data[y].upgradeRecords.length,fmt:v=>v},
+    {label:'最高單日',color:'#f0b429',get:y=>Math.max(...data[y].dailyTotal.map(d=>d.total)),fmt:v=>v.toLocaleString()},
+  ];
+  const kpiEl=document.getElementById('kpi-grid-compare'); kpiEl.innerHTML='';
+  kpiDefs.forEach(kpi=>{
+    const vals=years.map(y=>kpi.get(y));
+    const div=document.createElement('div'); div.className='kpi-card'; div.style.setProperty('--kpi-color',kpi.color);
+    let deltaHtml='';
+    if(years.length>=2){
+      const v0=vals[0],v1=vals[vals.length-1];
+      const pct=v0>0?((v1-v0)/v0*100).toFixed(1):null;
+      if(pct!==null){const cls=pct>0?'up':pct<0?'down':'flat';const sign=pct>0?'▲':pct<0?'▼':'—';deltaHtml=`<div class="kpi-delta ${cls}">${sign} ${Math.abs(pct)}%</div>`;}
+    }
+    div.innerHTML=`<div class="kpi-label">${kpi.label}</div><div class="kpi-years">${years.map((y,i)=>`<div class="kpi-year"><div class="kpi-yr-label">${y}</div><div class="kpi-yr-val" style="color:${kpi.color}">${kpi.fmt(vals[i])}</div></div>`).join('')}</div>${deltaHtml}`;
+    kpiEl.appendChild(div);
+  });
+
+  // ── LF overlays ──
+  FK.forEach(f=>{
+    const maxD=Math.max(...years.map(y=>data[y].flightData[f].length));
+    const dl=Array.from({length:maxD},(_,i)=>String(i+1));
+    mk('ch-c-lf-'+f.toLowerCase(),'line',{labels:dl,datasets:years.map(y=>({label:String(y),data:data[y].flightData[f].map(r=>r.lf>0?r.lf:null),borderColor:yearColor(y,years),backgroundColor:'transparent',tension:.3,pointRadius:2,pointHoverRadius:5,borderWidth:2,spanGaps:false}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:10,font:{size:10}}}},scales:{...BS,y:{...BS.y,min:0,max:110,ticks:{callback:v=>v+'%'}}}});
+    mkYearLegend('leg-c-lf-'+f.toLowerCase(),years);
+    MA_CHARTS['ch-c-lf-'+f.toLowerCase()]=years.map(y=>({label:String(y),color:yearColor(y,years),rawData:data[y].flightData[f].map(r=>r.lf>0?r.lf:null)}));
+  });
+  mk('ch-c-lf-bar','bar',{labels:FK.map(f=>FLIGHTS[f].label),datasets:years.map(y=>{const avgs=FK.map(f=>{const rs=data[y].flightData[f].filter(r=>r.lf>0);return rs.length?(rs.reduce((s,r)=>s+r.lf,0)/rs.length).toFixed(1):0;});return{label:String(y),data:avgs,backgroundColor:yearColor(y,years)+'bb',borderColor:yearColor(y,years),borderWidth:1,borderRadius:4};})},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0,max:110,ticks:{callback:v=>v+'%'}}}});
+  if(showMA) applyMAToAllCharts();
+
+  // ── Upgrade ──
+  mk('ch-c-upg-bar','bar',{labels:FK.map(f=>FLIGHTS[f].label),datasets:years.map(y=>({label:String(y),data:FK.map(f=>data[y].upgradeRecords.filter(r=>r.flight===f).length),backgroundColor:yearColor(y,years)+'bb',borderColor:yearColor(y,years),borderWidth:1,borderRadius:4}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0,ticks:{stepSize:1}}}});
+  const upgCTbody=document.getElementById('upg-c-tbody'); upgCTbody.innerHTML='';
+  years.forEach((y,yi)=>{
+    const tr=document.createElement('tr');
+    const byFlight=FK.map(f=>data[y].upgradeRecords.filter(r=>r.flight===f).length);
+    const total=byFlight.reduce((s,v)=>s+v,0);
+    const fee=data[y].upgradeRecords.reduce((s,r)=>s+r.fee,0);
+    let deltaHtml='';
+    if(yi>0){const prev=FK.map(f=>data[years[yi-1]].upgradeRecords.filter(r=>r.flight===f).length).reduce((s,v)=>s+v,0);const diff=total-prev;const chip=diff>0?`<span class="up-chip">+${diff}</span>`:diff<0?`<span class="down-chip">${diff}</span>`:`<span class="flat-chip">—</span>`;deltaHtml=` ${chip}`;}
+    tr.innerHTML=`<td style="font-family:var(--mono);font-weight:700;color:${yearColor(y,years)}">${y}</td>${byFlight.map(v=>`<td style="font-family:var(--mono)">${v||'—'}</td>`).join('')}<td style="font-family:var(--mono);font-weight:700">${total}${deltaHtml}</td><td style="font-family:var(--mono)">${fee>0?'TWD '+fee.toLocaleString():'—'}</td>`;
+    upgCTbody.appendChild(tr);
+  });
+
+  // ── Delay compare ──
+  function delayRows(y,f){ return data[y].flightData[f].filter(r=>!r.cancelled&&r.sched&&r.delayMin!=null); }
+  const dKpiEl=document.getElementById('delay-kpi-grid'); dKpiEl.innerHTML='';
+  const dKpiDefs=[
+    {label:'平均延誤（全航班）',color:'#2d6bc4',get:y=>{const rs=FK.flatMap(f=>delayRows(y,f));return rs.length?(rs.reduce((s,r)=>s+r.delayMin,0)/rs.length).toFixed(1):null;},fmt:v=>v==null?'—':v+' 分'},
+    {label:'嚴重延誤率（≥30分）',color:'#dc2626',get:y=>{const rs=FK.flatMap(f=>delayRows(y,f));return rs.length?((rs.filter(r=>r.delayMin>=30).length/rs.length)*100).toFixed(1):null;},fmt:v=>v==null?'—':v+'%'},
+    {label:'準點率（≤0分）',color:'#17a34a',get:y=>{const rs=FK.flatMap(f=>delayRows(y,f));return rs.length?((rs.filter(r=>r.delayMin<=0).length/rs.length)*100).toFixed(1):null;},fmt:v=>v==null?'—':v+'%'},
+    {label:'最大延誤班次',color:'#f0b429',get:y=>{const rs=FK.flatMap(f=>delayRows(y,f));return rs.length?Math.max(...rs.map(r=>r.delayMin)):null;},fmt:v=>v==null?'—':'+'+v+' 分'},
+  ];
+  dKpiDefs.forEach(kpi=>{
+    const vals=years.map(y=>kpi.get(y));
+    const div=document.createElement('div'); div.className='kpi-card'; div.style.setProperty('--kpi-color',kpi.color);
+    let deltaHtml='';
+    if(years.length>=2){
+      const v0=parseFloat(vals[0]),v1=parseFloat(vals[vals.length-1]);
+      if(!isNaN(v0)&&!isNaN(v1)&&v0!==0){const diff=(v1-v0).toFixed(1);const lowerBetter=kpi.label.includes('延誤');const improved=lowerBetter?v1<v0:v1>v0;const cls=improved?'up':v1===v0?'flat':'down';const sign=parseFloat(diff)>0?'+':'';deltaHtml=`<div class="kpi-delta ${cls}">${sign}${diff}</div>`;}
+    }
+    div.innerHTML=`<div class="kpi-label">${kpi.label}</div><div class="kpi-years">${years.map((y,i)=>`<div class="kpi-year"><div class="kpi-yr-label">${y}</div><div class="kpi-yr-val" style="color:${kpi.color}">${kpi.fmt(vals[i])}</div></div>`).join('')}</div>${deltaHtml}`;
+    dKpiEl.appendChild(div);
+  });
+  FK.forEach(f=>{
+    const maxD=Math.max(...years.map(y=>data[y].flightData[f].length));
+    const dl=Array.from({length:maxD},(_,i)=>String(i+1));
+    mk('ch-c-delay-'+f.toLowerCase(),'line',{labels:dl,datasets:years.map(y=>({label:String(y),data:data[y].flightData[f].map(r=>r.cancelled?null:r.delayMin),borderColor:yearColor(y,years),backgroundColor:'transparent',tension:.3,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:false}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:10,font:{size:10}}}},scales:{...BS,y:{...BS.y,ticks:{callback:v=>(v>=0?'+':'')+v+' 分'}}}});
+    mkYearLegend('leg-c-delay-'+f.toLowerCase(),years);
+  });
+  mk('ch-c-late30-bar','bar',{labels:FK.map(f=>FLIGHTS[f].label),datasets:years.map(y=>({label:String(y),data:FK.map(f=>{const rs=delayRows(y,f);return rs.length?+((rs.filter(r=>r.delayMin>=30).length/rs.length)*100).toFixed(1):0;}),backgroundColor:yearColor(y,years)+'bb',borderColor:yearColor(y,years),borderWidth:1,borderRadius:4}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0,ticks:{callback:v=>v+'%'}}}});
+  mk('ch-c-avgdelay-bar','bar',{labels:FK.map(f=>FLIGHTS[f].label),datasets:years.map(y=>({label:String(y),data:FK.map(f=>{const rs=delayRows(y,f);return rs.length?+(rs.reduce((s,r)=>s+r.delayMin,0)/rs.length).toFixed(1):0;}),backgroundColor:yearColor(y,years)+'bb',borderColor:yearColor(y,years),borderWidth:1,borderRadius:4}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,ticks:{callback:v=>(v>=0?'+':'')+v+' 分'}}}});
+  const dCTbody=document.getElementById('delay-c-tbody'); dCTbody.innerHTML='';
+  years.forEach(y=>{
+    FK.forEach(f=>{
+      const rs=delayRows(y,f); if(!rs.length) return;
+      const ontime=rs.filter(r=>r.delayMin<=0).length;
+      const mild=rs.filter(r=>r.delayMin>0&&r.delayMin<30).length;
+      const late30=rs.filter(r=>r.delayMin>=30).length;
+      const rate=((late30/rs.length)*100).toFixed(1);
+      const avg=(rs.reduce((s,r)=>s+r.delayMin,0)/rs.length).toFixed(1);
+      const rateChip=late30>0?`<span class="down-chip">${rate}%</span>`:`<span class="up-chip">0%</span>`;
+      const avgChip=parseFloat(avg)>0?`<span class="down-chip">+${avg}</span>`:parseFloat(avg)<0?`<span class="up-chip">${avg}</span>`:`<span class="flat-chip">0</span>`;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td style="font-family:var(--mono);font-weight:700;color:${yearColor(y,years)}">${y}</td><td style="font-family:var(--mono);font-size:12px;color:${FLIGHTS[f].color};font-weight:700">${f}</td><td style="font-family:var(--mono)">${rs.length}</td><td style="font-family:var(--mono);color:var(--green)">${ontime}</td><td style="font-family:var(--mono);color:#b45309">${mild}</td><td style="font-family:var(--mono);color:var(--red)">${late30}</td><td>${rateChip}</td><td>${avgChip}</td>`;
+      dCTbody.appendChild(tr);
+    });
+    const spacer=document.createElement('tr'); spacer.innerHTML=`<td colspan="8" style="background:var(--bg);height:4px;border:none"></td>`; dCTbody.appendChild(spacer);
+  });
+}
+
+// ── Initial page setup ──
+document.addEventListener('DOMContentLoaded', () => {
+  // Show correct sub-content on tab switch
+  document.querySelectorAll('.single-content').forEach(el => el.style.display = '');
+  document.querySelectorAll('.compare-content').forEach(el => el.style.display = 'none');
+});
+</script>
+</body>
+</html>
