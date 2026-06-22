@@ -268,6 +268,22 @@ button.btn-secondary:hover { background: var(--surface2); }
 }
 .heatmap-table td.hm-cell:hover { transform: scale(1.15); z-index: 1; position: relative; }
 .heatmap-table td.hm-label { color: var(--text-3); font-size: 10px; font-weight: 600; padding-right: 8px; white-space: nowrap; }
+
+/* Feedback widget */
+.fb-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; border: none; box-shadow: var(--shadow); cursor: pointer; font-size: 22px; z-index: 200; display: flex; align-items: center; justify-content: center; }
+.fb-overlay { position: fixed; inset: 0; background: rgba(26,45,69,.45); display: none; align-items: center; justify-content: center; z-index: 201; }
+.fb-overlay.show { display: flex; }
+.fb-box { background: var(--card); border-radius: 14px; padding: 22px 24px; width: min(380px,90vw); box-shadow: var(--shadow); }
+.fb-box h3 { font-size: 15px; margin-bottom: 14px; color: var(--text); }
+.fb-box select, .fb-box textarea, .fb-box input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--sans); margin-bottom: 10px; color: var(--text); background: var(--surface2); }
+.fb-box textarea { min-height: 80px; resize: vertical; }
+.fb-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.fb-msg { font-size: 12px; margin-top: 8px; min-height: 16px; }
+.fb-star-row { display: flex; gap: 5px; margin-bottom: 10px; }
+.fb-star { font-size: 24px; cursor: pointer; color: #d1dce8; transition: color .1s, transform .1s; user-select: none; line-height: 1; }
+.fb-star:hover, .fb-star.active { color: var(--amber); }
+.fb-star:hover { transform: scale(1.15); }
+.fb-star-hint { font-size: 11px; color: var(--text-3); margin-top: -6px; margin-bottom: 10px; min-height: 14px; }
 </style>
 </head>
 <body>
@@ -375,8 +391,16 @@ button.btn-secondary:hover { background: var(--surface2); }
     <!-- ── 總覽 (single only) ── -->
     <div class="page active" id="page-overview">
       <div class="card" style="margin-bottom:14px">
-        <div class="card-title">每日總載客人數</div><div class="card-sub">四航班合計 + 7日均線</div>
+        <div class="card-title">每日總載客人數</div><div class="card-sub">四航班合計 + 7日均線（紅點為異常日）</div>
         <canvas id="ch-overview" height="100"></canvas>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">趨勢分解 — 每日落差（vs 7日均線）</div><div class="card-sub">綠色高於趨勢／紅色低於趨勢</div>
+        <canvas id="ch-trend-residual" height="80"></canvas>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">異常日偵測</div><div class="card-sub">總載客 Z-score &gt; 2</div>
+        <div id="anomaly-list-total" style="font-size:12px"></div>
       </div>
       <div class="chart-grid-2">
         <div class="card"><div class="card-title">各航班月份佔比</div><div class="card-sub">旅客人數分佈</div><canvas id="ch-pie" height="200"></canvas></div>
@@ -394,10 +418,10 @@ button.btn-secondary:hover { background: var(--surface2); }
           <canvas id="ch-pax" height="110"></canvas>
         </div>
         <div class="chart-grid-2">
-          <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub">每日班</div><canvas id="ch-s-fm802" height="130"></canvas></div>
-          <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub">每日班（含停航）</div><canvas id="ch-s-mu5098" height="130"></canvas></div>
-          <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm820" height="130"></canvas></div>
-          <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm852" height="130"></canvas></div>
+          <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub">每日班</div><canvas id="ch-s-fm802" height="130"></canvas><div id="anom-fm802" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
+          <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub">每日班（含停航）</div><canvas id="ch-s-mu5098" height="130"></canvas><div id="anom-mu5098" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
+          <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm820" height="130"></canvas><div id="anom-fm820" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
+          <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm852" height="130"></canvas><div id="anom-fm852" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
         </div>
       </div>
       <!-- compare sub-content -->
@@ -559,10 +583,70 @@ button.btn-secondary:hover { background: var(--surface2); }
   </div><!-- end .content -->
 </div><!-- end #app -->
 
+<button class="fb-fab" id="fb-fab" title="問題回報 / 建議" onclick="fbOpen()">💬</button>
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-box">
+    <h3>問題回報 / 建議</h3>
+    <select id="fb-type">
+      <option value="問題">問題</option>
+      <option value="建議">建議</option>
+    </select>
+    <textarea id="fb-desc" placeholder="請描述你遇到的問題或建議..."></textarea>
+    <div class="fb-star-row" id="fb-star-row">
+      <span class="fb-star" data-val="1">★</span>
+      <span class="fb-star" data-val="2">★</span>
+      <span class="fb-star" data-val="3">★</span>
+      <span class="fb-star" data-val="4">★</span>
+      <span class="fb-star" data-val="5">★</span>
+    </div>
+    <div class="fb-star-hint" id="fb-star-hint"></div>
+    <input id="fb-contact" placeholder="聯絡方式（選填）">
+    <div class="fb-actions">
+      <button class="btn-secondary" onclick="fbClose()">取消</button>
+      <button class="btn-secondary" style="background:var(--blue);color:#fff;border-color:var(--blue)" onclick="fbSubmit()">送出</button>
+    </div>
+    <div class="fb-msg" id="fb-msg"></div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════
+const FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyyLemZKexsiJmzsBWDUzTuOXwKUzWZV3FLjozjWh58w47iEqD0T7Cl63pXFn-ipCokFQ/exec';
+
+function fbOpen(){ document.getElementById('fb-overlay').classList.add('show'); document.getElementById('fb-msg').textContent=''; }
+function fbClose(){ document.getElementById('fb-overlay').classList.remove('show'); }
+
+// ── 星星評分 ──
+const FB_STAR_LABELS = ['','很差','不太好','普通','不錯','非常好'];
+let fbRating = 0;
+document.querySelectorAll('.fb-star').forEach(s => {
+  s.addEventListener('mouseenter', () => { fbHighlight(+s.dataset.val); document.getElementById('fb-star-hint').textContent = FB_STAR_LABELS[+s.dataset.val]; });
+  s.addEventListener('mouseleave', () => { fbHighlight(fbRating); document.getElementById('fb-star-hint').textContent = fbRating ? FB_STAR_LABELS[fbRating] : ''; });
+  s.addEventListener('click',      () => { fbRating = fbRating === +s.dataset.val ? 0 : +s.dataset.val; fbHighlight(fbRating); document.getElementById('fb-star-hint').textContent = fbRating ? FB_STAR_LABELS[fbRating] : ''; });
+});
+function fbHighlight(val){ document.querySelectorAll('.fb-star').forEach(s => s.classList.toggle('active', +s.dataset.val <= val)); }
+
+async function fbSubmit(){
+  const type=document.getElementById('fb-type').value;
+  const desc=document.getElementById('fb-desc').value.trim();
+  const contact=document.getElementById('fb-contact').value.trim();
+  const msgEl=document.getElementById('fb-msg');
+  if(!desc){ msgEl.textContent='請輸入內容'; msgEl.style.color='var(--red)'; return; }
+  msgEl.textContent='送出中...'; msgEl.style.color='var(--text-3)';
+  try{
+    await fetch(FEEDBACK_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({type,description:desc,contact,rating:fbRating||null,page:location.href})});
+    msgEl.textContent='已送出，謝謝回報！'; msgEl.style.color='var(--green)';
+    document.getElementById('fb-desc').value=''; document.getElementById('fb-contact').value='';
+    fbRating=0; fbHighlight(0); document.getElementById('fb-star-hint').textContent='';
+    setTimeout(fbClose,1200);
+  }catch(err){
+    msgEl.textContent='送出失敗，請稍後再試'; msgEl.style.color='var(--red)';
+  }
+}
+
 const FLIGHTS = {
   FM802:  { label:'FM802 (TSA-PVG)',  color:'#2e7ec7', sheet:'TSA-PVG (FM802)'  },
   MU5098: { label:'MU5098 (TSA-SHA)', color:'#e8744a', sheet:'TSA-SHA (MU5098)' },
@@ -967,6 +1051,16 @@ function resetAll(){
 // ═══════════════════════════════════════════
 //  SINGLE MODE
 // ═══════════════════════════════════════════
+function zScoreOf(values) {
+  const valid = values.filter(v=>v!=null);
+  if (valid.length < 5) return values.map(()=>null);
+  const mean = valid.reduce((a,b)=>a+b,0)/valid.length;
+  const variance = valid.reduce((a,b)=>a+(b-mean)**2,0)/valid.length;
+  const sd = Math.sqrt(variance);
+  if (sd===0) return values.map(v=>v==null?null:0);
+  return values.map(v=>v==null?null:(v-mean)/sd);
+}
+
 function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLabel}) {
   _delay = delayData;
   const dates = dailyTotal.map(d=>d.date);
@@ -989,10 +1083,24 @@ function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLab
   // Overview
   function movingAvg(data,w){ return data.map((_,i)=>{ const s=data.slice(Math.max(0,i-w+1),i+1).filter(v=>v!=null); return s.length?Math.round(s.reduce((a,b)=>a+b,0)/s.length):null; }); }
   const rawOv=dailyTotal.map(d=>d.total);
+  const maOv=movingAvg(rawOv,7);
+  const zOv=zScoreOf(rawOv);
+  const anomOv=zOv.map((z,i)=>(z!=null&&Math.abs(z)>2)?i:-1).filter(i=>i>=0);
+  const residOv=rawOv.map((v,i)=>(v!=null&&maOv[i]!=null)?v-maOv[i]:null);
   mk('ch-overview','line',{labels:dates,datasets:[
-    {label:'每日總載客',data:rawOv,borderColor:'#2e7ec7',backgroundColor:'rgba(46,126,199,.1)',fill:true,tension:.35,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:true},
-    {label:'7日均線',data:movingAvg(rawOv,7),borderColor:'#f0b429',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:1.5,spanGaps:true}
+    {label:'每日總載客',data:rawOv,borderColor:'#2e7ec7',backgroundColor:'rgba(46,126,199,.1)',fill:true,tension:.35,
+     pointRadius:dates.map((_,i)=>anomOv.includes(i)?6:3),pointBackgroundColor:dates.map((_,i)=>anomOv.includes(i)?'#ef4444':'#2e7ec7'),
+     pointHoverRadius:8,borderWidth:2,spanGaps:true},
+    {label:'7日均線',data:maOv,borderColor:'#f0b429',backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,borderWidth:1.5,spanGaps:true}
   ]},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#6b8aaa',boxWidth:12,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0}}});
+  mk('ch-trend-residual','bar',{labels:dates,datasets:[{label:'落差(實際-7日均)',data:residOv,
+    backgroundColor:residOv.map(v=>v==null?'#8496a955':v>=0?'#17a34a99':'#ef444499'),
+    borderColor:residOv.map(v=>v==null?'#8496a9':v>=0?'#17a34a':'#ef4444'),borderWidth:1,borderRadius:2}]},{...TT,scales:BS});
+  const anomTotEl=document.getElementById('anomaly-list-total');
+  anomTotEl.innerHTML = anomOv.length ? anomOv.map(i=>{
+    const dir=zOv[i]>0?'▲暴增':'▼暴減'; const c=zOv[i]>0?'var(--green)':'var(--red)';
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="font-family:var(--mono)">${dates[i]}</span><span>${rawOv[i].toLocaleString()} 人</span><span style="color:${c}">${dir}（Z=${zOv[i].toFixed(1)}）</span></div>`;
+  }).join('') : '<div style="color:var(--text-3)">本月無顯著異常日</div>';
   mk('ch-pie','doughnut',{labels:FK.map(f=>FLIGHTS[f].label),datasets:[{data:FK.map(f=>flightData[f].reduce((s,r)=>s+(r.pax||0),0)),backgroundColor:FK.map(f=>FLIGHTS[f].color),borderColor:'#fff',borderWidth:3,hoverOffset:8}]},pieOpts);
   mk('ch-upg-pie','doughnut',{labels:FK.map(f=>FLIGHTS[f].label),datasets:[{data:FK.map(f=>upgradeRecords.filter(r=>r.flight===f).length),backgroundColor:FK.map(f=>FLIGHTS[f].color),borderColor:'#fff',borderWidth:3,hoverOffset:8}]},pieOpts);
 
@@ -1004,8 +1112,16 @@ function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLab
   ['fm802','mu5098','fm820','fm852'].forEach((id,i)=>{
     const f=FK[i];
     const rawD=dates.map(d=>paxOf(f,d));
-    mk('ch-s-'+id,'bar',{labels:dates,datasets:[{label:FLIGHTS[f].label,data:rawD,backgroundColor:FLIGHTS[f].color+'55',borderColor:FLIGHTS[f].color,borderWidth:1,borderRadius:2,skipNull:true}]},{...TT,scales:{...BS,y:{...BS.y,min:0}}});
+    const zD=zScoreOf(rawD);
+    const anomD=zD.map((z,j)=>(z!=null&&Math.abs(z)>2)?j:-1).filter(j=>j>=0);
+    mk('ch-s-'+id,'bar',{labels:dates,datasets:[{label:FLIGHTS[f].label,data:rawD,
+      backgroundColor:dates.map((_,j)=>anomD.includes(j)?'#ef4444cc':FLIGHTS[f].color+'55'),
+      borderColor:dates.map((_,j)=>anomD.includes(j)?'#ef4444':FLIGHTS[f].color),borderWidth:1,borderRadius:2,skipNull:true}]},{...TT,scales:{...BS,y:{...BS.y,min:0}}});
     MA_CHARTS['ch-s-'+id]=[{label:FLIGHTS[f].label,color:FLIGHTS[f].color,rawData:rawD}];
+    const anomNote=document.getElementById('anom-'+id);
+    if(anomNote) anomNote.innerHTML = anomD.length
+      ? '異常：'+anomD.map(j=>`${dates[j]}（${rawD[j]}人，${zD[j]>0?'↑':'↓'}${Math.abs(zD[j]).toFixed(1)}σ）`).join('、')
+      : '無顯著異常日';
   });
   // Re-apply MA if it was on
   if(showMA) applyMAToAllCharts();
@@ -1135,6 +1251,13 @@ function filterDelay(f,btn){ document.querySelectorAll('.flight-btn').forEach(b=
 // ═══════════════════════════════════════════
 function buildMonthBar(){
   const months=Object.keys(compareData).sort((a,b)=>MONTH_MAP[a]-MONTH_MAP[b]);
+  const allYears=new Set();
+  months.forEach(m=>Object.keys(compareData[m]).forEach(y=>allYears.add(y)));
+  if(allYears.size===1 && months.length>1){
+    document.getElementById('month-bar').style.display='none';
+    selectCompareYearAxis([...allYears][0], months);
+    return;
+  }
   const el=document.getElementById('month-pills'); el.innerHTML='';
   months.forEach(m=>{
     const btn=document.createElement('button'); btn.className='month-pill';
@@ -1156,11 +1279,19 @@ function selectCompareMonth(mon){
   const zhMon=MONTH_ZH[MONTH_MAP[mon]]||mon;
   document.getElementById('hdr-period').textContent=`${zhMon}月 — ${years.join(' vs ')}`;
   document.getElementById('hdr-badge').textContent=`年度比較`;
-  buildCompareCharts(mon,years);
+  buildCompareCharts(years, compareData[mon]);
 }
 
-function buildCompareCharts(mon, years){
-  const data=compareData[mon];
+function selectCompareYearAxis(year, months){
+  currentCMonth=null;
+  const monthData={}; months.forEach(m=>{ monthData[m]=compareData[m][year]; });
+  const zhList=months.map(m=>(MONTH_ZH[MONTH_MAP[m]]||'')+'月').join(' vs ');
+  document.getElementById('hdr-period').textContent=`${year}年 — ${zhList}`;
+  document.getElementById('hdr-badge').textContent=`月份比較`;
+  buildCompareCharts(months, monthData);
+}
+
+function buildCompareCharts(years, data){
 
   // ── Pax: per-flight overlays ──
   FK.forEach(f=>{

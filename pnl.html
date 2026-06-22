@@ -5,29 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PNL Parser</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
   :root {
-    --bg: #eef2f7;
-    --sidebar: #1e3a5f;
-    --card: #ffffff;
-    --border: #dde4ee;
-    --blue: #2d6bc4;
-    --blue-light: #e8f0fb;
-    --green: #17a34a;
-    --green-light: #dcfce7;
-    --orange: #ea6c1a;
-    --orange-light: #fff0e6;
-    --red: #dc2626;
-    --red-light: #fee2e2;
-    --yellow: #b45309;
-    --yellow-light: #fef9c3;
-    --text: #1a2535;
-    --text-2: #4b5a6e;
-    --text-3: #8496a9;
-    --sans: 'Inter', 'Noto Sans TC', sans-serif;
-    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --bg:        #f0f2f5;
+    --card:      #ffffff;
+    --border:    #e8eaed;
+    --blue:      #4361ee;
+    --blue-lt:   #eef0fd;
+    --green:     #2cb67d;
+    --green-lt:  #e7f7f0;
+    --orange:    #f4845f;
+    --orange-lt: #fef0eb;
+    --red:       #ef4444;
+    --red-lt:    #fef2f2;
+    --yellow:    #f59e0b;
+    --yellow-lt: #fffbeb;
+    --purple:    #7c3aed;
+    --purple-lt: #f5f3ff;
+    --text:      #1a1d23;
+    --text-2:    #5a6072;
+    --text-3:    #9ba3b5;
+    --radius:    16px;
+    --radius-sm: 10px;
+    --shadow:    0 2px 8px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+    --sans: 'Inter','Noto Sans TC',sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,69 +40,50 @@
     color: var(--text);
     font-family: var(--sans);
     min-height: 100vh;
-    display: flex;
   }
 
-  /* Sidebar */
-  .sidebar {
-    width: 56px;
-    background: var(--sidebar);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px 0;
-    gap: 24px;
-    flex-shrink: 0;
+  /* ── Layout ── */
+  .shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
   }
 
-  .sidebar-icon {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    color: rgba(255,255,255,0.4);
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.15s;
-  }
-
-  .sidebar-icon.active {
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-  }
-
-  .sidebar-icon:hover { color: #fff; }
-
-  /* Main */
-  .main {
-    flex: 1;
-    padding: 28px 28px 40px;
-    overflow-x: hidden;
-  }
-
-  /* Top bar */
+  /* ── Topbar ── */
   .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
   }
 
-  .page-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
+  .logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
 
-  .page-title .icon {
-    width: 36px; height: 36px;
+  .logo-icon {
+    width: 42px; height: 42px;
     background: var(--blue);
-    border-radius: 10px;
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    color: #fff;
-    font-size: 16px;
+    font-size: 20px;
+    box-shadow: 0 4px 12px rgba(67,97,238,0.35);
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    font-weight: 400;
+    margin-top: 1px;
   }
 
   .topbar-right {
@@ -108,82 +92,87 @@
     gap: 10px;
   }
 
-  .badge-online {
-    display: flex;
+  .pill {
+    display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: var(--green-light);
-    color: var(--green);
     font-size: 11px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 20px;
+    letter-spacing: 0.2px;
   }
+  .pill-green { background: var(--green-lt); color: var(--green); }
+  .pill-green::before { content:''; width:6px;height:6px;border-radius:50%;background:var(--green); }
 
-  .badge-online::before {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-  }
-
-  /* Card */
+  /* ── Card ── */
   .card {
     background: var(--card);
-    border-radius: 12px;
+    border-radius: var(--radius);
     box-shadow: var(--shadow);
-    padding: 20px;
-    margin-bottom: 20px;
+    padding: 24px;
   }
 
   .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
   }
 
   .card-title {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
     color: var(--text);
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .step-badge {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--blue);
-    color: #fff;
+  .card-hint {
     font-size: 11px;
-    font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
+    font-weight: 400;
+    color: var(--text-3);
+    margin-left: 4px;
   }
 
-  /* Textarea */
+  .chevron {
+    color: var(--text-3);
+    font-size: 14px;
+  }
+
+  /* ── Grid ── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Input card ── */
+  .input-card { margin-bottom: 16px; }
+
   textarea {
     width: 100%;
-    min-height: 150px;
-    background: #f8fafc;
+    min-height: 140px;
+    background: #f8f9fb;
     border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     color: var(--text);
     font-family: 'Courier New', monospace;
     font-size: 12px;
-    line-height: 1.7;
-    padding: 12px 14px;
+    line-height: 1.75;
+    padding: 14px 16px;
     resize: vertical;
     outline: none;
-    transition: border-color 0.15s;
-    color: #334155;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-
-  textarea:focus { border-color: var(--blue); }
+  textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(67,97,238,0.1);
+  }
   textarea::placeholder { color: var(--text-3); }
 
-  /* Buttons */
   .btn-row {
     display: flex;
     gap: 8px;
@@ -193,9 +182,9 @@
   button {
     font-family: var(--sans);
     font-size: 13px;
-    font-weight: 500;
-    padding: 8px 18px;
-    border-radius: 8px;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: var(--radius-sm);
     border: none;
     cursor: pointer;
     transition: all 0.15s;
@@ -207,59 +196,93 @@
   .btn-primary {
     background: var(--blue);
     color: #fff;
-    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(67,97,238,0.3);
   }
-  .btn-primary:hover { background: #1e54a8; }
+  .btn-primary:hover { background: #3451d1; box-shadow: 0 4px 14px rgba(67,97,238,0.4); }
 
-  .btn-secondary {
-    background: #f1f5f9;
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-3);
+    border: 1.5px solid var(--border);
+  }
+  .btn-ghost:hover { background: #f8f9fb; color: var(--text-2); }
+
+  .btn-sm {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: #f4f5f7;
     color: var(--text-2);
     border: 1px solid var(--border);
   }
-  .btn-secondary:hover { background: #e2e8f0; }
+  .btn-sm:hover { background: #e8eaed; }
 
-  .btn-danger {
-    background: var(--red-light);
-    color: var(--red);
-    border: 1px solid #fecaca;
-  }
-  .btn-danger:hover { background: #fecaca; }
+  /* Feedback widget */
+  .fb-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; border: none; box-shadow: var(--shadow); cursor: pointer; font-size: 22px; z-index: 200; display: flex; align-items: center; justify-content: center; }
+  .fb-overlay { position: fixed; inset: 0; background: rgba(26,45,69,.45); display: none; align-items: center; justify-content: center; z-index: 201; }
+  .fb-overlay.show { display: flex; }
+  .fb-box { background: var(--card); border-radius: 14px; padding: 22px 24px; width: min(380px,90vw); box-shadow: var(--shadow); }
+  .fb-box h3 { font-size: 15px; margin-bottom: 14px; color: var(--text); }
+  .fb-box select, .fb-box textarea, .fb-box input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--sans); margin-bottom: 10px; color: var(--text); background: var(--surface2, #f8fafc); }
+  .fb-box textarea { min-height: 80px; resize: vertical; }
+  .fb-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  .fb-actions button { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer; background: #f5f7fa; color: var(--text); }
+  .fb-actions button:hover { opacity: 0.95; }
+  .fb-msg { font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .fb-star-row { display: flex; gap: 5px; margin-bottom: 10px; }
+  .fb-star { font-size: 24px; cursor: pointer; color: #d1dce8; transition: color .1s, transform .1s; user-select: none; line-height: 1; }
+  .fb-star:hover, .fb-star.active { color: #f0b429; }
+  .fb-star:hover { transform: scale(1.15); }
+  .fb-star-hint { font-size: 11px; color: var(--text-3); margin-top: -6px; margin-bottom: 10px; min-height: 14px; }
 
-  /* Stats row */
+  /* ── Stat cards ── */
   #result-section { display: none; }
 
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  .stats-row {
+    display: flex;
     gap: 12px;
+    flex-wrap: wrap;
     margin-bottom: 20px;
   }
 
-  .stat-card {
-    background: var(--bg);
+  .stat-chip {
+    background: #f8f9fb;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    min-width: 90px;
+    flex: 1;
   }
 
-  .stat-num {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--blue);
+  .stat-chip-num {
+    font-size: 28px;
+    font-weight: 800;
     line-height: 1;
+    letter-spacing: -1px;
   }
 
-  .stat-label {
+  .stat-chip-label {
     font-size: 11px;
     color: var(--text-3);
-    margin-top: 4px;
     font-weight: 500;
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
   }
 
-  /* Table */
+  .num-blue   { color: var(--blue); }
+  .num-orange { color: var(--orange); }
+  .num-green  { color: var(--green); }
+  .num-red    { color: var(--red); }
+  .num-purple { color: var(--purple); }
+  .num-yellow { color: var(--yellow); }
+  .num-default{ color: var(--text-2); }
+
+  /* ── Table ── */
   .table-wrap {
     overflow-x: auto;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border);
   }
 
@@ -269,10 +292,10 @@
     font-size: 13px;
   }
 
-  thead tr { background: #f8fafc; }
+  thead tr { background: #f8f9fb; }
 
   th {
-    padding: 10px 14px;
+    padding: 11px 16px;
     text-align: left;
     font-size: 11px;
     font-weight: 600;
@@ -283,130 +306,160 @@
     white-space: nowrap;
   }
 
-  td {
-    padding: 10px 14px;
-    border-bottom: 1px solid #f1f5f9;
-    color: var(--text);
-  }
-
-  tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: #f8fafc; }
-
-  .class-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 9px;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 20px;
-  }
-
-  .class-F { background: #fef9c3; color: #854d0e; }
-  .class-C, .class-J { background: var(--orange-light); color: var(--orange); }
-  .class-W { background: var(--blue-light); color: var(--blue); }
-  .class-P { background: #f3e8ff; color: #7c3aed; }
-  .class-Y { background: var(--green-light); color: var(--green); }
-  .class-X { background: #f1f5f9; color: var(--text-3); }
-  .class-default { background: #f1f5f9; color: var(--text-3); }
-
-  .deleted-row td { opacity: 0.45; }
-  .deleted-row td:first-child { text-decoration: line-through; }
-
-  .ssr-tag {
-    display: inline-block;
-    background: var(--yellow-light);
-    color: var(--yellow);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 1px 6px;
-    border-radius: 4px;
-    margin-right: 2px;
-  }
-
-  .del-tag {
-    display: inline-block;
-    background: var(--red-light);
-    color: var(--red);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 1px 6px;
-    border-radius: 4px;
-  }
-
-  .copy-row {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 14px;
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  .ticket-num { font-family: 'Courier New', monospace; font-size: 12px; color: var(--text-2); }
-  .no-ticket { color: var(--red); font-size: 12px; }
-  .seq-num { color: var(--text-3); font-size: 12px; }
-  .seat-num { color: var(--text-2); font-family: 'Courier New', monospace; font-size: 12px; }
-  .bn-num { color: var(--blue); font-family: 'Courier New', monospace; font-size: 12px; font-weight: 600; }
-
   th.sortable {
     cursor: pointer;
     user-select: none;
     position: relative;
-    padding-right: 22px;
+    padding-right: 24px;
+    transition: color 0.12s, background 0.12s;
   }
-  th.sortable:hover { color: var(--blue); background: var(--blue-light); }
+  th.sortable:hover { color: var(--blue); background: var(--blue-lt); }
   th.sortable::after {
     content: '⇅';
     position: absolute;
-    right: 6px;
-    opacity: 0.35;
+    right: 7px;
+    opacity: 0.3;
     font-size: 10px;
   }
   th.sortable.asc::after  { content: '↑'; opacity: 1; color: var(--blue); }
   th.sortable.desc::after { content: '↓'; opacity: 1; color: var(--blue); }
+
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover td { background: #fafbfc; }
+
+  .deleted-row td { opacity: 0.4; }
+
+  /* ── Badges ── */
+  .class-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .class-F { background: var(--yellow-lt); color: var(--yellow); }
+  .class-C, .class-J { background: var(--orange-lt); color: var(--orange); }
+  .class-W { background: var(--blue-lt); color: var(--blue); }
+  .class-P { background: var(--purple-lt); color: var(--purple); }
+  .class-Y, .class-X, .class-default { background: #f3f4f6; color: var(--text-2); }
+
+  .ssr-tag {
+    display: inline-flex;
+    align-items: center;
+    background: var(--yellow-lt);
+    color: var(--yellow);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    margin-right: 3px;
+    letter-spacing: 0.2px;
+  }
+
+  .del-tag {
+    display: inline-flex;
+    align-items: center;
+    background: var(--red-lt);
+    color: var(--red);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+
+  .ticket-num {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    letter-spacing: 0.3px;
+  }
+  .no-ticket { color: var(--text-3); font-size: 13px; }
+  .seq-num { color: var(--text-3); font-size: 12px; font-weight: 500; }
+  .bn-num  {
+    color: var(--blue);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--blue-lt);
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+  .seat-num {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 600;
+  }
+  .pax-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Divider ── */
+  .section-gap { margin-bottom: 16px; }
 </style>
 </head>
 <body>
 
-<!-- Main Content -->
-<div class="main">
+<div class="shell">
 
+  <!-- Topbar -->
   <div class="topbar">
-    <div class="page-title">
-      <div class="icon">✈</div>
-      PNL Parser
+    <div class="logo">
+      <div class="logo-icon">✈</div>
+      <div>
+        <div class="logo-text">PNL Parser</div>
+        <div class="logo-sub">Passenger Name List 解析工具</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="pill pill-green">即時解析</span>
     </div>
   </div>
 
-  <!-- 01 Input -->
-  <div class="card">
+  <!-- Input -->
+  <div class="card input-card section-gap">
     <div class="card-header">
-      <div class="card-title">
-        <div class="step-badge">1</div>
-        貼入內容
-      </div>
+      <div class="card-title">貼入內容</div>
     </div>
     <textarea id="pnl-input" placeholder="貼上 PNL 電報內容..."></textarea>
     <div class="btn-row">
       <button class="btn-primary" onclick="parsePNL()">▶ 解析</button>
-      <button class="btn-danger" onclick="clearAll()">清除</button>
+      <button class="btn-ghost" onclick="clearAll()">清除</button>
     </div>
   </div>
 
-  <!-- 02 Results -->
+  <!-- Results -->
   <div id="result-section">
+
+    <!-- Stats chips -->
+    <div class="stats-row" id="stats-row"></div>
+
+    <!-- Table card -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <div class="step-badge">2</div>
           解析結果
-          <span style="font-size:11px;font-weight:400;color:var(--text-3);margin-left:6px">點擊欄位標題可排序，再點一次反轉順序</span>
+          <span class="card-hint">點擊欄位標題排序，再點反轉</span>
         </div>
-        <button class="btn-secondary" style="font-size:12px;padding:6px 12px" onclick="copyTSV()">⎘ 複製 TSV</button>
+        <button class="btn-sm" onclick="copyTSV()">⎘ 複製 TSV</button>
       </div>
-      <div class="stats-grid" id="stats-row"></div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -424,18 +477,26 @@
         </table>
       </div>
     </div>
-  </div>
 
-</div>
+  </div><!-- /result-section -->
+
+</div><!-- /shell -->
 
 <script>
-// ─── PNL Parser ───────────────────────────────────────────────
 let parsedData = [];
 let currentSort = { key: null, dir: 1 };
 
+// ── cabin colour map for stat chips ──
+const cabinColor = {
+  F: 'num-yellow',
+  C: 'num-orange', J: 'num-orange',
+  W: 'num-blue',
+  P: 'num-purple',
+  Y: 'num-default', X: 'num-default',
+};
+
 function sortTable(key) {
   const th = document.getElementById('th-' + key);
-
   if (currentSort.key === key) {
     currentSort.dir *= -1;
   } else {
@@ -446,32 +507,25 @@ function sortTable(key) {
   th.classList.remove('asc','desc');
   th.classList.add(currentSort.dir === 1 ? 'asc' : 'desc');
 
-  const classOrder = {'F':1,'C':2,'J':2,'W':3,'P':4,'Y':5,'X':6};
-
+  const classOrder = {F:1,C:2,J:2,W:3,P:4,Y:5,X:6};
   parsedData.sort((a, b) => {
     let av, bv;
     switch(key) {
-      case 'bn':     av = a.bn;     bv = b.bn;     return (av - bv) * currentSort.dir;
-      case 'name':   av = a.name;   bv = b.name;   break;
-      case 'ticket': av = a.ticket || ''; bv = b.ticket || ''; break;
+      case 'bn':     return (a.bn - b.bn) * currentSort.dir;
+      case 'name':   av = a.name; bv = b.name; break;
+      case 'ticket': av = a.ticket||''; bv = b.ticket||''; break;
       case 'cabin':
-        av = classOrder[a.cabin] || 7;
-        bv = classOrder[b.cabin] || 7;
-        return (av - bv) * currentSort.dir;
+        return ((classOrder[a.cabin]||7) - (classOrder[b.cabin]||7)) * currentSort.dir;
       case 'seat':
-        const parseSeat = s => { const m = s.match(/^(\d+)([A-Z])$/); return m ? parseInt(m[1])*100 + m[2].charCodeAt(0) : 9999; };
-        av = parseSeat(a.seat); bv = parseSeat(b.seat);
-        return (av - bv) * currentSort.dir;
+        const ps = s => { const m=s.match(/^(\d+)([A-Z])$/); return m?parseInt(m[1])*100+m[2].charCodeAt(0):9999; };
+        return (ps(a.seat) - ps(b.seat)) * currentSort.dir;
       case 'ssr':
-        av = (a.ssr || '') + (a.deleted ? 'DELETED' : '');
-        bv = (b.ssr || '') + (b.deleted ? 'DELETED' : '');
+        av = (a.ssr||'')+(a.deleted?'DELETED':'');
+        bv = (b.ssr||'')+(b.deleted?'DELETED':'');
         break;
     }
-    if (av < bv) return -1 * currentSort.dir;
-    if (av > bv) return  1 * currentSort.dir;
-    return 0;
+    return av<bv ? -currentSort.dir : av>bv ? currentSort.dir : 0;
   });
-
   renderResults();
 }
 
@@ -481,11 +535,9 @@ function parsePNL() {
 
   parsedData = [];
   currentSort = { key: null, dir: 1 };
-  // reset header indicators
   document.querySelectorAll('th.sortable').forEach(th => th.classList.remove('asc','desc'));
 
   const lines = raw.split('\n');
-
   const blocks = [];
   let current = [];
 
@@ -501,32 +553,35 @@ function parsePNL() {
 
   let idx = 1;
   for (const block of blocks) {
-    const text = block.join(' ');
-    const pax = parsePassenger(text, idx++);
+    const pax = parsePassenger(block.join(' '), idx++);
     if (pax) parsedData.push(pax);
   }
 
-  // Default sort by cabin class
-  const classOrder = {'F':1,'C':2,'J':2,'W':3,'P':4,'Y':5,'X':6};
-  parsedData.sort((a, b) => {
-    const oa = classOrder[a.cabin] || 7;
-    const ob = classOrder[b.cabin] || 7;
-    return oa - ob;
+  // Deduplicate
+  const seen = new Set();
+  parsedData = parsedData.filter(p => {
+    const key = `${p.bn}|${p.name}|${p.ticket||''}|${p.seat}|${p.cabin}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
+
+  // Default: sort by cabin
+  const classOrder = {F:1,C:2,J:2,W:3,P:4,Y:5,X:6};
+  parsedData.sort((a,b) => (classOrder[a.cabin]||7) - (classOrder[b.cabin]||7));
 
   renderResults();
 }
 
 function parsePassenger(text, idx) {
-  // Extract BN number (e.g. "1." or "12." at start of block)
-  const bnMatch = text.match(/^\s*(\d+)\.\s/);
+  const bnMatch = text.match(/\bBN(\d+)\b/);
   const bn = bnMatch ? parseInt(bnMatch[1]) : idx;
 
   const nameMatch = text.match(/\d+\.\s+\d*([A-Z]+\/[A-Z]+)/);
   const name = nameMatch ? nameMatch[1].replace('/', ' ') : '—';
 
   const seatMatch = text.match(/\*?(\d{1,3}[A-Z])\s+([A-Z])\s/);
-  const seat = seatMatch ? seatMatch[1] : '—';
+  const seat  = seatMatch ? seatMatch[1] : '—';
   const cabin = seatMatch ? seatMatch[2] : '—';
 
   const etMatch = text.match(/ET\s*NUMBER[:\s]+(\d{13})/);
@@ -534,50 +589,67 @@ function parsePassenger(text, idx) {
 
   const deleted = /DELETED/i.test(text);
 
-  const ssrMatch = [];
   const ssrCodes = ['WCHR','WCHC','WCHS','UMNR','UM','VGML','KSML','BBML','SPML','MEDA','LANG'];
-  for (const c of ssrCodes) {
-    if (new RegExp(`\\b${c}\\b`).test(text)) ssrMatch.push(c);
-  }
+  const ssrMatch = ssrCodes.filter(c => new RegExp(`\\b${c}\\b`).test(text));
 
-   if (name === '—' && !ticket) return null;
-
+  if (name === '—' && !ticket) return null;
   return { idx, bn, name, seat, cabin, ticket, deleted, ssr: ssrMatch.join(' ') };
 }
 
 function renderResults() {
   if (parsedData.length === 0) return;
-
   document.getElementById('result-section').style.display = 'block';
 
+  // Stats
   const classCounts = {};
   let noTicket = 0;
   for (const p of parsedData) {
-    classCounts[p.cabin] = (classCounts[p.cabin] || 0) + 1;
+    classCounts[p.cabin] = (classCounts[p.cabin]||0) + 1;
     if (!p.ticket) noTicket++;
   }
 
-  const statsHtml = Object.entries(classCounts).map(([c, n]) =>
-    `<div class="stat-card"><div class="stat-num">${n}</div><div class="stat-label">${c} 艙</div></div>`
-  ).join('') +
-  `<div class="stat-card"><div class="stat-num" style="color:var(--text)">${parsedData.length}</div><div class="stat-label">Total PAX</div></div>` +
-  (noTicket > 0 ? `<div class="stat-card"><div class="stat-num" style="color:var(--red)">${noTicket}</div><div class="stat-label">No Ticket</div></div>` : '');
+  const classOrder = {F:1,C:2,J:2,W:3,P:4,Y:5,X:6};
+  const sortedCabins = Object.entries(classCounts)
+    .sort(([a],[b]) => (classOrder[a]||7) - (classOrder[b]||7));
+
+  let statsHtml = sortedCabins.map(([c,n]) => {
+    const col = cabinColor[c] || 'num-default';
+    return `<div class="stat-chip">
+      <div class="stat-chip-num ${col}">${n}</div>
+      <div class="stat-chip-label">${c} 艙</div>
+    </div>`;
+  }).join('');
+
+  statsHtml += `<div class="stat-chip">
+    <div class="stat-chip-num num-default">${parsedData.length}</div>
+    <div class="stat-chip-label">Total PAX</div>
+  </div>`;
+
+  if (noTicket > 0) {
+    statsHtml += `<div class="stat-chip">
+      <div class="stat-chip-num num-red">${noTicket}</div>
+      <div class="stat-chip-label">No Ticket</div>
+    </div>`;
+  }
 
   document.getElementById('stats-row').innerHTML = statsHtml;
 
+  // Rows
   const rows = parsedData.map((p, i) => {
     const cls = p.cabin && p.cabin !== '—' ? p.cabin : 'default';
-    const badge = `<span class="class-badge class-${cls}">${p.cabin}</span>`;
+    const badge  = `<span class="class-badge class-${cls}">${p.cabin}</span>`;
     const ticket = p.ticket
       ? `<span class="ticket-num">${p.ticket}</span>`
       : `<span class="no-ticket">—</span>`;
-    const ssrHtml = p.ssr ? p.ssr.split(' ').map(s => `<span class="ssr-tag">${s}</span>`).join('') : '';
-    const delHtml = p.deleted ? '<span class="del-tag">DELETED</span>' : '';
-    const rowCls = p.deleted ? 'deleted-row' : '';
+    const ssrHtml = p.ssr
+      ? p.ssr.split(' ').map(s => `<span class="ssr-tag">${s}</span>`).join('')
+      : '';
+    const delHtml = p.deleted ? '<span class="del-tag">DEL</span>' : '';
+    const rowCls  = p.deleted ? 'deleted-row' : '';
     return `<tr class="${rowCls}">
       <td class="seq-num">${i+1}</td>
-      <td class="bn-num">${p.bn}</td>
-      <td style="font-weight:500">${p.name}</td>
+      <td><span class="bn-num">${p.bn}</span></td>
+      <td class="pax-name">${p.name}</td>
       <td>${ticket}</td>
       <td>${badge}</td>
       <td class="seat-num">${p.seat}</td>
@@ -604,6 +676,39 @@ function clearAll() {
   currentSort = { key: null, dir: 1 };
 }
 
+const FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyyLemZKexsiJmzsBWDUzTuOXwKUzWZV3FLjozjWh58w47iEqD0T7Cl63pXFn-ipCokFQ/exec';
+
+function fbOpen(){ document.getElementById('fb-overlay').classList.add('show'); document.getElementById('fb-msg').textContent=''; }
+function fbClose(){ document.getElementById('fb-overlay').classList.remove('show'); }
+
+const FB_STAR_LABELS = ['','很差','不太好','普通','不錯','非常好'];
+let fbRating = 0;
+document.querySelectorAll('.fb-star').forEach(s => {
+  s.addEventListener('mouseenter', () => { fbHighlight(+s.dataset.val); document.getElementById('fb-star-hint').textContent = FB_STAR_LABELS[+s.dataset.val]; });
+  s.addEventListener('mouseleave', () => { fbHighlight(fbRating); document.getElementById('fb-star-hint').textContent = fbRating ? FB_STAR_LABELS[fbRating] : ''; });
+  s.addEventListener('click',      () => { fbRating = fbRating === +s.dataset.val ? 0 : +s.dataset.val; fbHighlight(fbRating); document.getElementById('fb-star-hint').textContent = fbRating ? FB_STAR_LABELS[fbRating] : ''; });
+});
+function fbHighlight(val){ document.querySelectorAll('.fb-star').forEach(s => s.classList.toggle('active', +s.dataset.val <= val)); }
+
+async function fbSubmit(){
+  const type=document.getElementById('fb-type').value;
+  const desc=document.getElementById('fb-desc').value.trim();
+  const contact=document.getElementById('fb-contact').value.trim();
+  const msgEl=document.getElementById('fb-msg');
+  if(!desc){ msgEl.textContent='請輸入內容'; msgEl.style.color='var(--red)'; return; }
+  msgEl.textContent='送出中...'; msgEl.style.color='var(--text-3)';
+  try{
+    const res = await fetch(FEEDBACK_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({type,description:desc,contact,rating:fbRating||null,page:location.href})});
+    if (!res.ok) throw new Error('status ' + res.status);
+    msgEl.textContent='已送出，謝謝回報！'; msgEl.style.color='var(--green)';
+    document.getElementById('fb-desc').value=''; document.getElementById('fb-contact').value='';
+    fbRating=0; fbHighlight(0); document.getElementById('fb-star-hint').textContent='';
+    setTimeout(fbClose,1200);
+  }catch(err){
+    msgEl.textContent='送出失敗，請稍後再試'; msgEl.style.color='var(--red)';
+  }
+}
 </script>
 </body>
 </html>

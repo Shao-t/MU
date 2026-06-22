@@ -14,6 +14,8 @@
     --border: #dde4ee;
     --blue: #2d6bc4;
     --blue-light: #e8f0fb;
+    --green: #2ca88e;
+    --red: #ef4444;
     --text: #1a2535;
     --text-2: #4b5a6e;
     --text-3: #8496a9;
@@ -209,6 +211,24 @@
   }
 
   iframe.active { display: block; }
+
+  /* Feedback widget */
+  .fb-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; border: none; box-shadow: var(--shadow); cursor: pointer; font-size: 22px; z-index: 200; display: flex; align-items: center; justify-content: center; }
+  .fb-overlay { position: fixed; inset: 0; background: rgba(26,45,69,.45); display: none; align-items: center; justify-content: center; z-index: 201; }
+  .fb-overlay.show { display: flex; }
+  .fb-box { background: var(--card); border-radius: 14px; padding: 22px 24px; width: min(380px,90vw); box-shadow: var(--shadow); }
+  .fb-box h3 { font-size: 15px; margin-bottom: 14px; color: var(--text); }
+  .fb-box select, .fb-box textarea, .fb-box input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--sans); margin-bottom: 10px; color: var(--text); background: var(--surface2, #f8fafc); }
+  .fb-box textarea { min-height: 80px; resize: vertical; }
+  .fb-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  .fb-actions button { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer; background: #f5f7fa; color: var(--text); }
+  .fb-actions button:hover { opacity: 0.95; }
+  .fb-msg { font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .fb-star-row { display: flex; gap: 5px; margin-bottom: 10px; }
+  .fb-star { font-size: 24px; cursor: pointer; color: #d1dce8; transition: color .1s, transform .1s; user-select: none; line-height: 1; }
+  .fb-star:hover, .fb-star.active { color: #f0b429; }
+  .fb-star:hover { transform: scale(1.15); }
+  .fb-star-hint { font-size: 11px; color: var(--text-3); margin-top: -6px; margin-bottom: 10px; min-height: 14px; }
 </style>
 </head>
 <body>
@@ -246,6 +266,32 @@
     <iframe id="frame-dashboard" src="flight-analytics.html"></iframe>
   </div>
 
+<button class="fb-fab" id="fb-fab" title="問題回報 / 建議" onclick="fbOpen()">💬</button>
+<div class="fb-overlay" id="fb-overlay">
+  <div class="fb-box">
+    <h3>問題回報 / 建議</h3>
+    <select id="fb-type">
+      <option value="問題">問題</option>
+      <option value="建議">建議</option>
+    </select>
+    <textarea id="fb-desc" placeholder="請描述你遇到的問題或建議..."></textarea>
+    <div class="fb-star-row" id="fb-star-row">
+      <span class="fb-star" data-val="1">★</span>
+      <span class="fb-star" data-val="2">★</span>
+      <span class="fb-star" data-val="3">★</span>
+      <span class="fb-star" data-val="4">★</span>
+      <span class="fb-star" data-val="5">★</span>
+    </div>
+    <div class="fb-star-hint" id="fb-star-hint"></div>
+    <input id="fb-contact" placeholder="聯絡方式（選填）">
+    <div class="fb-actions">
+      <button type="button" onclick="fbClose()">取消</button>
+      <button type="button" style="background:var(--blue);color:#fff;border-color:var(--blue)" onclick="fbSubmit()">送出</button>
+    </div>
+    <div class="fb-msg" id="fb-msg"></div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -264,6 +310,40 @@ function switchTo(name, navEl) {
   document.getElementById('topbar-icon').textContent = meta[name].icon;
   document.getElementById('topbar-name').textContent = meta[name].name;
   document.getElementById('topbar-sub').textContent  = meta[name].sub;
+}
+
+const FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyyLemZKexsiJmzsBWDUzTuOXwKUzWZV3FLjozjWh58w47iEqD0T7Cl63pXFn-ipCokFQ/exec';
+
+function fbOpen(){ document.getElementById('fb-overlay').classList.add('show'); document.getElementById('fb-msg').textContent=''; }
+function fbClose(){ document.getElementById('fb-overlay').classList.remove('show'); }
+
+const FB_STAR_LABELS = ['','很差','不太好','普通','不錯','非常好'];
+let fbRating = 0;
+document.querySelectorAll('.fb-star').forEach(s => {
+  s.addEventListener('mouseenter', () => { fbHighlight(+s.dataset.val); document.getElementById('fb-star-hint').textContent = FB_STAR_LABELS[+s.dataset.val]; });
+  s.addEventListener('mouseleave', () => { fbHighlight(fbRating); document.getElementById('fb-star-hint').textContent = fbRating ? FB_STAR_LABELS[fbRating] : ''; });
+  s.addEventListener('click',      () => { fbRating = fbRating === +s.dataset.val ? 0 : +s.dataset.val; fbHighlight(fbRating); document.getElementById('fb-star-hint').textContent = fbRating ? FB_STAR_LABELS[fbRating] : ''; });
+});
+function fbHighlight(val){ document.querySelectorAll('.fb-star').forEach(s => s.classList.toggle('active', +s.dataset.val <= val)); }
+
+async function fbSubmit(){
+  const type=document.getElementById('fb-type').value;
+  const desc=document.getElementById('fb-desc').value.trim();
+  const contact=document.getElementById('fb-contact').value.trim();
+  const msgEl=document.getElementById('fb-msg');
+  if(!desc){ msgEl.textContent='請輸入內容'; msgEl.style.color='var(--red)'; return; }
+  msgEl.textContent='送出中...'; msgEl.style.color='var(--text-3)';
+  try{
+    const res = await fetch(FEEDBACK_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({type,description:desc,contact,rating:fbRating||null,page:location.href})});
+    if (!res.ok) throw new Error('status ' + res.status);
+    msgEl.textContent='已送出，謝謝回報！'; msgEl.style.color='var(--green)';
+    document.getElementById('fb-desc').value=''; document.getElementById('fb-contact').value='';
+    fbRating=0; fbHighlight(0); document.getElementById('fb-star-hint').textContent='';
+    setTimeout(fbClose,1200);
+  }catch(err){
+    msgEl.textContent='送出失敗，請稍後再試'; msgEl.style.color='var(--red)';
+  }
 }
 </script>
 </body>
