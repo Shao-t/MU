@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aero Tools</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TYXN5DSX5K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-TYXN5DSX5K');
+
+  // Lightweight wrapper for future event tracking from the entry page.
+  function trackEvent(name, params = {}) {
+    if (typeof gtag === 'function') gtag('event', name, params);
+  }
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500&display=swap');
 
