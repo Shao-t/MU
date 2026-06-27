@@ -21,7 +21,6 @@
 
   :root {
     --bg: #eef2f7;
-    --sidebar: #1e3a5f;
     --card: #ffffff;
     --border: #dde4ee;
     --blue: #2d6bc4;
@@ -44,59 +43,6 @@
     height: 100vh;
     overflow: hidden;
   }
-
-  /* Sidebar */
-  .sidebar {
-    width: 56px;
-    background: var(--sidebar);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px 0;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  .sidebar-logo {
-    font-size: 8px;
-    color: rgba(255,255,255,0.25);
-    letter-spacing: 1.5px;
-    margin-bottom: 14px;
-    text-align: center;
-    line-height: 1.6;
-    font-family: 'Courier New', monospace;
-    text-transform: uppercase;
-  }
-
-  .nav-item {
-    width: 40px;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 4px;
-    color: rgba(255,255,255,0.35);
-    cursor: pointer;
-    transition: all 0.15s;
-    gap: 4px;
-    border: none;
-    background: none;
-  }
-
-  .nav-item:hover {
-    color: rgba(255,255,255,0.75);
-    background: rgba(255,255,255,0.08);
-  }
-
-  .nav-item.active {
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-  }
-
-  .nav-icon { font-size: 17px; line-height: 1; }
-  .nav-label { font-size: 8px; text-align: center; line-height: 1.2; letter-spacing: 0.3px; }
-  .sidebar-spacer { flex: 1; }
 
   /* Content area: topbar + iframe */
   .content {
@@ -313,7 +259,6 @@ const meta = {
 };
 
 function switchTo(name, navEl) {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('iframe').forEach(f => f.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   navEl.classList.add('active');
@@ -322,6 +267,7 @@ function switchTo(name, navEl) {
   document.getElementById('topbar-icon').textContent = meta[name].icon;
   document.getElementById('topbar-name').textContent = meta[name].name;
   document.getElementById('topbar-sub').textContent  = meta[name].sub;
+  trackEvent('switch_tab', { tab_name: name });
 }
 
 const FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyyLemZKexsiJmzsBWDUzTuOXwKUzWZV3FLjozjWh58w47iEqD0T7Cl63pXFn-ipCokFQ/exec';

@@ -363,6 +363,12 @@ button.btn-secondary:hover { background: var(--surface2); }
     <span style="font-size:11px;color:var(--text-3)">顯示於所有載客量 / 載客率圖表</span>
   </div>
 
+  <!-- Flight filter bar (dynamic, both modes) -->
+  <div id="flight-filter-bar" style="display:none;padding:10px 32px;background:var(--card);border-bottom:1px solid var(--border);align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--text-3);letter-spacing:1px;text-transform:uppercase">顯示航班：</span>
+    <div id="flight-filter-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+
   <!-- Month bar (compare mode only) -->
   <div id="month-bar">
     <div class="month-bar-label">選擇月份</div>
@@ -374,7 +380,7 @@ button.btn-secondary:hover { background: var(--surface2); }
     <div class="kpi" style="--kpi-color:var(--blue)"><div class="kpi-label">月總載客</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">旅客人數</div></div>
     <div class="kpi" style="--kpi-color:var(--orange)"><div class="kpi-label">最高單日</div><div class="kpi-value" id="kpi-peak">—</div><div class="kpi-sub" id="kpi-peak-date">—</div></div>
     <div class="kpi" style="--kpi-color:var(--blue)"><div class="kpi-label">優惠升艙</div><div class="kpi-value" id="kpi-upgrade">—</div><div class="kpi-sub">人次</div></div>
-    <div class="kpi" style="--kpi-color:var(--purple)"><div class="kpi-label">平均載客率</div><div class="kpi-value" id="kpi-lf">—</div><div class="kpi-sub">四航班加權</div></div>
+    <div class="kpi" style="--kpi-color:var(--purple)"><div class="kpi-label">平均載客率</div><div class="kpi-value" id="kpi-lf">—</div><div class="kpi-sub" id="kpi-lf-sub">四航班加權</div></div>
   </div>
 
   <!-- Tabs -->
@@ -391,7 +397,7 @@ button.btn-secondary:hover { background: var(--surface2); }
     <!-- ── 總覽 (single only) ── -->
     <div class="page active" id="page-overview">
       <div class="card" style="margin-bottom:14px">
-        <div class="card-title">每日總載客人數</div><div class="card-sub">四航班合計 + 7日均線（紅點為異常日）</div>
+        <div class="card-title">每日總載客人數</div><div class="card-sub" id="ov-sub">四航班合計 + 7日均線（紅點為異常日）</div>
         <canvas id="ch-overview" height="100"></canvas>
       </div>
       <div class="card" style="margin-bottom:14px">
@@ -417,28 +423,18 @@ button.btn-secondary:hover { background: var(--surface2); }
           <div class="legend" id="leg-pax"></div>
           <canvas id="ch-pax" height="110"></canvas>
         </div>
-        <div class="chart-grid-2">
-          <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub">每日班</div><canvas id="ch-s-fm802" height="130"></canvas><div id="anom-fm802" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
-          <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub">每日班（含停航）</div><canvas id="ch-s-mu5098" height="130"></canvas><div id="anom-mu5098" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
-          <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm820" height="130"></canvas><div id="anom-fm820" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
-          <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub">隔日班</div><canvas id="ch-s-fm852" height="130"></canvas><div id="anom-fm852" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>
-        </div>
+        <div class="chart-grid-2" id="grid-s-pax"></div>
       </div>
       <!-- compare sub-content -->
       <div class="compare-content" style="display:none">
         <div class="section-hdr">各航班年度疊加</div>
-        <div class="chart-grid-2">
-          <div class="card"><div class="card-title">FM802 (TSA-PVG)</div><div class="card-sub" id="sub-fm802"></div><div class="year-legend" id="leg-c-fm802"></div><canvas id="ch-c-fm802" height="180"></canvas></div>
-          <div class="card"><div class="card-title">MU5098 (TSA-SHA)</div><div class="card-sub" id="sub-mu5098"></div><div class="year-legend" id="leg-c-mu5098"></div><canvas id="ch-c-mu5098" height="180"></canvas></div>
-          <div class="card"><div class="card-title">FM820 (TSA-PVG)</div><div class="card-sub" id="sub-fm820"></div><div class="year-legend" id="leg-c-fm820"></div><canvas id="ch-c-fm820" height="180"></canvas></div>
-          <div class="card"><div class="card-title">FM852 (TSA-SHA)</div><div class="card-sub" id="sub-fm852"></div><div class="year-legend" id="leg-c-fm852"></div><canvas id="ch-c-fm852" height="180"></canvas></div>
-        </div>
+        <div class="chart-grid-2" id="grid-c-pax"></div>
         <div class="card">
           <div class="card-title">月總載客 — 年度柱狀比較</div><div class="card-sub">各航班月加總，按年份並排</div>
           <canvas id="ch-c-total-bar" height="80"></canvas>
         </div>
         <div class="card">
-          <div class="card-title">每日總載客 — 年度趨勢疊加</div><div class="card-sub">四航班合計</div>
+          <div class="card-title">每日總載客 — 年度趨勢疊加</div><div class="card-sub" id="ctotal-sub">四航班合計</div>
           <div class="year-legend" id="leg-c-total"></div>
           <canvas id="ch-c-total-trend" height="90"></canvas>
         </div>
@@ -459,12 +455,7 @@ button.btn-secondary:hover { background: var(--surface2); }
       </div>
       <div class="compare-content" style="display:none">
         <div class="section-hdr">載客率年度比較</div>
-        <div class="chart-grid-2">
-          <div class="card"><div class="card-title">FM802</div><div class="year-legend" id="leg-c-lf-fm802"></div><canvas id="ch-c-lf-fm802" height="180"></canvas></div>
-          <div class="card"><div class="card-title">MU5098</div><div class="year-legend" id="leg-c-lf-mu5098"></div><canvas id="ch-c-lf-mu5098" height="180"></canvas></div>
-          <div class="card"><div class="card-title">FM820</div><div class="year-legend" id="leg-c-lf-fm820"></div><canvas id="ch-c-lf-fm820" height="180"></canvas></div>
-          <div class="card"><div class="card-title">FM852</div><div class="year-legend" id="leg-c-lf-fm852"></div><canvas id="ch-c-lf-fm852" height="180"></canvas></div>
-        </div>
+        <div class="chart-grid-2" id="grid-c-lf"></div>
         <div class="card">
           <div class="card-title">平均載客率 — 年度比較</div><div class="card-sub">各航班月平均，按年份並排</div>
           <canvas id="ch-c-lf-bar" height="80"></canvas>
@@ -495,7 +486,7 @@ button.btn-secondary:hover { background: var(--surface2); }
         <div class="card">
           <div class="card-title">升艙明細對照表</div><div class="card-sub">同月份各年度升艙人次與費用</div>
           <table class="dt" id="upg-c-table">
-            <thead><tr><th>年份</th><th>FM802</th><th>MU5098</th><th>FM820</th><th>FM852</th><th>合計人次</th><th>費用 (TWD)</th></tr></thead>
+            <thead><tr id="upg-c-thead"><th>年份</th><th>合計人次</th><th>費用 (TWD)</th></tr></thead>
             <tbody id="upg-c-tbody"></tbody>
           </table>
         </div>
@@ -513,11 +504,7 @@ button.btn-secondary:hover { background: var(--surface2); }
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
           <span style="font-size:11px;color:var(--text-3);letter-spacing:1px;text-transform:uppercase">篩選：</span>
-          <button class="flight-btn active" style="--flight-color:var(--blue)" onclick="filterDelay('ALL',this)">全部</button>
-          <button class="flight-btn" style="--flight-color:#2e7ec7" onclick="filterDelay('FM802',this)">FM802</button>
-          <button class="flight-btn" style="--flight-color:#e8744a" onclick="filterDelay('MU5098',this)">MU5098</button>
-          <button class="flight-btn" style="--flight-color:#f0b429" onclick="filterDelay('FM820',this)">FM820</button>
-          <button class="flight-btn" style="--flight-color:#9b7fe8" onclick="filterDelay('FM852',this)">FM852</button>
+          <div id="delay-filter-bar" style="display:flex;gap:8px;flex-wrap:wrap"></div>
           <span style="margin-left:auto;font-size:11px;color:var(--text-3)" id="delay-count-label"></span>
         </div>
         <div class="card">
@@ -535,11 +522,6 @@ button.btn-secondary:hover { background: var(--surface2); }
           <div class="card-sub">週次 × 星期，顯示平均延誤分鐘；僅計非取消有效班次</div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap" id="hm-flight-bar">
             <span style="font-size:11px;color:var(--text-3)">航班：</span>
-            <button class="flight-btn active" style="--flight-color:var(--blue)" onclick="renderHeatmap('ALL',this)">全部</button>
-            <button class="flight-btn" style="--flight-color:#2e7ec7" onclick="renderHeatmap('FM802',this)">FM802</button>
-            <button class="flight-btn" style="--flight-color:#e8744a" onclick="renderHeatmap('MU5098',this)">MU5098</button>
-            <button class="flight-btn" style="--flight-color:#f0b429" onclick="renderHeatmap('FM820',this)">FM820</button>
-            <button class="flight-btn" style="--flight-color:#9b7fe8" onclick="renderHeatmap('FM852',this)">FM852</button>
           </div>
           <div class="heatmap-wrap"><div id="heatmap-container"></div></div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap">
@@ -556,12 +538,7 @@ button.btn-secondary:hover { background: var(--surface2); }
       <div class="compare-content" style="display:none">
         <div class="section-hdr">準點分析 KPI</div>
         <div class="kpi-grid" id="delay-kpi-grid" style="margin-bottom:14px"></div>
-        <div class="chart-grid-2" style="margin-bottom:14px">
-          <div class="card"><div class="card-title">FM802 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-fm802"></div><canvas id="ch-c-delay-fm802" height="180"></canvas></div>
-          <div class="card"><div class="card-title">MU5098 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-mu5098"></div><canvas id="ch-c-delay-mu5098" height="180"></canvas></div>
-          <div class="card"><div class="card-title">FM820 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-fm820"></div><canvas id="ch-c-delay-fm820" height="180"></canvas></div>
-          <div class="card"><div class="card-title">FM852 — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-fm852"></div><canvas id="ch-c-delay-fm852" height="180"></canvas></div>
-        </div>
+        <div class="chart-grid-2" style="margin-bottom:14px" id="grid-c-delay"></div>
         <div class="card" style="margin-bottom:14px">
           <div class="card-title">嚴重延誤率（≥30分）— 年度比較</div><div class="card-sub">各航班月內延誤≥30分次數佔有效班次百分比</div>
           <canvas id="ch-c-late30-bar" height="80"></canvas>
@@ -647,17 +624,16 @@ async function fbSubmit(){
   }
 }
 
-const FLIGHTS = {
-  FM802:  { label:'FM802 (TSA-PVG)',  color:'#2e7ec7', sheet:'TSA-PVG (FM802)'  },
-  MU5098: { label:'MU5098 (TSA-SHA)', color:'#e8744a', sheet:'TSA-SHA (MU5098)' },
-  FM820:  { label:'FM820 (TSA-PVG)',  color:'#f0b429', sheet:'TSA-PVG (FM820)'  },
-  FM852:  { label:'FM852 (TSA-SHA)',  color:'#9b7fe8', sheet:'TSA-SHA(FM852)'   },
-};
-const FK = Object.keys(FLIGHTS);
+const PALETTE = ['#2e7ec7','#e8744a','#f0b429','#9b7fe8','#17a34a','#dc2626','#0ea5e9','#84cc16','#d946ef','#64748b','#0d9488','#f43f5e'];
+const PAX_SUB = {FM802:'每日班',MU5098:'每日班（含停航）',FM820:'隔日班',FM852:'隔日班'};
+let FLIGHTS = {};   // key -> {label,color,sheet,route}  — built dynamically after detecting flights
+let ALL_FK  = [];   // all detected flight keys, sorted by avg pax desc
+let FK      = [];   // currently active/displayed flight keys (subset of ALL_FK)
+let FC      = {};   // key -> color
+let ACTIVE_SET = new Set();
 const MONTH_MAP = {JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
 const MONTH_ZH  = ['','一','二','三','四','五','六','七','八','九','十','十一','十二'];
 const YEAR_COLORS = ['#2d6bc4','#e8744a','#17a34a','#9b7fe8','#f0b429','#ef4444'];
-const FC = {FM802:'var(--blue)',MU5098:'var(--orange)',FM820:'var(--amber)',FM852:'var(--purple)'};
 
 // ═══════════════════════════════════════════
 //  STATE
@@ -725,6 +701,78 @@ function toDateLabel(v) {
   if (!d||isNaN(d)) return null;
   return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
 }
+const SKIP_SHEETS = new Set(['汇总','匯總','中轉人數','中轉辦理率','逾重费','逾重費','優惠升艙統計表','優選座位統計','機場公司WEB統計','WEB統計及白金卡統計']);
+function detectFlights(wb) {
+  const out=[];
+  wb.SheetNames.forEach(name=>{
+    if (SKIP_SHEETS.has(name) || /銷售統計/.test(name)) return;
+    const m=name.match(/^(.*?)\s*\(\s*([A-Z]{0,3}\d{3,5})\s*\)\s*$/i);
+    if (!m) return;
+    const route=m[1].trim();
+    let code=m[2].toUpperCase();
+    if (!/^[A-Z]{2}/.test(code)) {
+      const ws=wb.Sheets[name];
+      const a1=ws&&ws['A1']?String(ws['A1'].v||''):'';
+      const tm=a1.match(/([A-Z]{2}\d{3,5})/);
+      if (tm) code=tm[1];
+    }
+    out.push({key:code,route,sheet:name});
+  });
+  return out;
+}
+function setupFlights(flights, flightData) {
+  flights = flights.filter(f => (flightData[f.key]||[]).some(r => r.pax != null));
+  FLIGHTS={}; FC={};
+  flights.forEach((f,i)=>{
+    const color=PALETTE[i%PALETTE.length];
+    FLIGHTS[f.key]={label:`${f.key} (${f.route})`,color,sheet:f.sheet,route:f.route};
+    FC[f.key]=color;
+  });
+  ALL_FK=flights.map(f=>f.key);
+  const avgPax=k=>{ const rs=(flightData[k]||[]).filter(r=>r.pax!=null); return rs.length?rs.reduce((s,r)=>s+r.pax,0)/rs.length:0; };
+  ALL_FK.sort((a,b)=>avgPax(b)-avgPax(a));
+  ACTIVE_SET=new Set(ALL_FK.slice(0,4));
+  syncFK();
+  buildFlightFilterUI();
+}
+function syncFK() { FK=ALL_FK.filter(k=>ACTIVE_SET.has(k)); }
+function buildFlightFilterUI() {
+  const bar=document.getElementById('flight-filter-bar');
+  const wrap=document.getElementById('flight-filter-chips');
+  if (!bar||!wrap) return;
+  wrap.innerHTML='';
+  ALL_FK.forEach(k=>{
+    const btn=document.createElement('button');
+    btn.className='flight-btn'+(ACTIVE_SET.has(k)?' active':'');
+    btn.style.setProperty('--flight-color',FLIGHTS[k].color);
+    btn.textContent=k;
+    btn.onclick=()=>toggleFlight(k,btn);
+    wrap.appendChild(btn);
+  });
+  bar.style.display='flex';
+}
+function toggleFlight(k,btn) {
+  if (ACTIVE_SET.has(k)) {
+    if (ACTIVE_SET.size<=1) return; // 至少保留一個航班
+    ACTIVE_SET.delete(k);
+  } else {
+    ACTIVE_SET.add(k);
+  }
+  btn.classList.toggle('active');
+  syncFK();
+  rerenderCurrent();
+}
+function rerenderCurrent() {
+  if (currentMode==='single' && singleData) { initSingleMode(singleData); }
+  else if (currentMode==='compare') {
+    if (currentCMonth) selectCompareMonth(currentCMonth);
+    else {
+      const months=Object.keys(compareData); const allYears=new Set();
+      months.forEach(m=>Object.keys(compareData[m]).forEach(y=>allYears.add(y)));
+      if (allYears.size===1 && months.length>1) selectCompareYearAxis([...allYears][0], months);
+    }
+  }
+}
 function parseFlightSheet(ws) {
   const str = XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
   const raw = XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
@@ -764,13 +812,15 @@ function parseUpgradeSheet(ws) {
 }
 function parseSummary(ws) {
   const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); const out=[];
-  // Scan rows 0-3 for a header row containing '總計' or '总计', fallback col 13
-  let totalCol=13;
+  // Scan rows 0-3 for a header cell that is the grand-total column:
+  // either Chinese '總計/总计', or English 'TTL' (e.g. "TTL(TPE+TSA)") at the start of the cell text.
+  let totalCol=-1;
   for(let hi=0;hi<Math.min(4,raw.length);hi++){
     const hr=raw[hi]||[];
-    const idx=hr.findIndex(c=>c&&/總計|总计/.test(String(c)));
+    const idx=hr.findIndex(c=>c&&/總計|总计|^TTL\b/i.test(String(c).trim()));
     if(idx>=0){totalCol=idx;break;}
   }
+  if(totalCol<0) throw new Error('找不到「汇总」工作表的總計欄位');
   for (let i=2;i<raw.length;i++){
     const r=raw[i]; if(!r||!r[0]) continue;
     const dateStr=toDateLabel(r[0]); if(!dateStr) continue;
@@ -786,24 +836,25 @@ function findSheet(wb,candidates) {
   }
   return null;
 }
-function parseWorkbook(wb, forCompare=false) {
+function parseWorkbook(wb, forCompare=false, flightList=null) {
+  const flights=flightList||detectFlights(wb);
   const flightData={}, delayData=[];
-  for (const [key,cfg] of Object.entries(FLIGHTS)){
-    const ws=findSheet(wb,[cfg.sheet,key]);
-    if(!ws) throw new Error(`找不到工作表：${cfg.sheet}`);
+  flights.forEach(({key,sheet})=>{
+    const ws=findSheet(wb,[sheet,key]);
+    if(!ws){ flightData[key]=[]; return; }
     const parsed=parseFlightSheet(ws);
     flightData[key]=parsed;
     parsed.forEach(r=>{if(r.sched) delayData.push({flight:key,...r});});
-  }
+  });
   const sumWs=findSheet(wb,['汇总','匯總']); if(!sumWs) throw new Error('找不到「汇总」工作表');
   const dailyTotal=parseSummary(sumWs);
   const ugWs=findSheet(wb,['優惠升艙統計表','升舱统计']);
   const upgradeRecords=ugWs?parseUpgradeSheet(ugWs):[];
-  if (forCompare) return {flightData,dailyTotal,upgradeRecords};
+  if (forCompare) return {flightData,dailyTotal,upgradeRecords,_flights:flights};
   const months=[...new Set(dailyTotal.map(d=>d.date.split('/')[0]))];
   const MN=['','一','二','三','四','五','六','七','八','九','十','十一','十二'];
   const monthLabel=months.map(m=>MN[+m]||m+'月').join('–')+'月';
-  return {flightData,dailyTotal,upgradeRecords,delayData,monthLabel};
+  return {flightData,dailyTotal,upgradeRecords,delayData,monthLabel,_flights:flights};
 }
 
 // ═══════════════════════════════════════════
@@ -869,6 +920,7 @@ function processSingleFile(file) {
       const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
       setProgress(60,'整理資料…');
       const data=parseWorkbook(wb,false);
+      setupFlights(data._flights, data.flightData);
       setProgress(85,'建立圖表…');
       setTimeout(()=>{
         launchApp('single', data, file.name);
@@ -915,16 +967,20 @@ async function processCompareFiles(){
   if(valid.length<2){showError('請至少上傳 2 個有效檔案');return;}
   clearError(); setProgress(0,'開始解析…');
   compareData={};
+  let baseFlights=null;
   for(let i=0;i<valid.length;i++){
     const pf=valid[i];
     setProgress(Math.round((i/valid.length)*85),`解析 ${pf.month}${pf.year}…`);
     try {
       const wb=await readXLS(pf.file);
-      const data=parseWorkbook(wb,true);
+      if(!baseFlights) baseFlights=detectFlights(wb);
+      const data=parseWorkbook(wb,true,baseFlights);
       if(!compareData[pf.month]) compareData[pf.month]={};
       compareData[pf.month][pf.year]=data;
     } catch(e){ showError(`${pf.name}：${e.message}`); return; }
   }
+  const fm0=Object.keys(compareData)[0]; const fy0=Object.keys(compareData[fm0])[0];
+  setupFlights(compareData[fm0][fy0]._flights, compareData[fm0][fy0].flightData);
   setProgress(100,'完成');
   setTimeout(()=>{
     progWrap.style.display='none';
@@ -1074,6 +1130,8 @@ function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLab
   document.getElementById('kpi-peak-date').textContent=peak.date;
   document.getElementById('kpi-upgrade').textContent=upgradeRecords.length;
   document.getElementById('kpi-lf').textContent=lfN?(lfS/lfN).toFixed(1)+'%':'—';
+  document.getElementById('kpi-lf-sub').textContent=FK.length+'航班加權';
+  document.getElementById('ov-sub').textContent=FK.length+'航班合計 + 7日均線（紅點為異常日）';
   document.getElementById('upg-sub').textContent=`來源：優惠升艙統計表（共 ${upgradeRecords.length} 筆）`;
 
   const paxOf=(f,d)=>{ const r=flightData[f].find(x=>x.date===d); return (r&&r.pax!=null)?r.pax:null; };
@@ -1109,8 +1167,9 @@ function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLab
   mkLegend('leg-pax',paxCh,FK);
   // Register ch-pax for MA
   MA_CHARTS['ch-pax'] = FK.map(f=>({label:FLIGHTS[f].label,color:FLIGHTS[f].color,rawData:dates.map(d=>paxOf(f,d))}));
-  ['fm802','mu5098','fm820','fm852'].forEach((id,i)=>{
-    const f=FK[i];
+  document.getElementById('grid-s-pax').innerHTML = FK.map(f=>`<div class="card"><div class="card-title">${FLIGHTS[f].label}</div><div class="card-sub">${PAX_SUB[f]||'每日趨勢'}</div><canvas id="ch-s-${f.toLowerCase()}" height="130"></canvas><div id="anom-${f.toLowerCase()}" style="font-size:11px;color:var(--text-3);margin-top:6px;line-height:1.6"></div></div>`).join('');
+  FK.forEach(f=>{
+    const id=f.toLowerCase();
     const rawD=dates.map(d=>paxOf(f,d));
     const zD=zScoreOf(rawD);
     const anomD=zD.map((z,j)=>(z!=null&&Math.abs(z)>2)?j:-1).filter(j=>j>=0);
@@ -1158,8 +1217,34 @@ function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLab
   dDs.push({label:'30分',data:dDates.map(d=>({x:d,y:30})),borderColor:'rgba(239,68,68,.3)',borderDash:[6,3],borderWidth:1.5,pointRadius:0,showLine:true,type:'line'});
   const dCh=mk('ch-delay','scatter',{datasets:dDs},{scales:{x:{type:'category',labels:dDates,grid:GL,ticks:{maxRotation:0,font:{size:11}}},y:{grid:GL,title:{display:true,text:'延誤分鐘',color:'#6b8aaa',font:{size:11}},ticks:{callback:v=>(v>=0?'+':'')+v+' min'}}},plugins:{legend:{display:false},tooltip:{...TT.plugins.tooltip,callbacks:{label:ctx=>` ${ctx.dataset.label}  ${ctx.raw.y>=0?'+':''}${ctx.raw.y} 分鐘`}}}});
   mkLegend('leg-delay',dCh,FK);
+  buildDelayFilterButtons();
+  buildHeatmapFilterButtons();
   renderDelayTable('ALL');
   renderHeatmap('ALL', document.querySelector('#hm-flight-bar .flight-btn'));
+}
+
+function buildDelayFilterButtons() {
+  const bar=document.getElementById('delay-filter-bar'); bar.innerHTML='';
+  const allBtn=document.createElement('button'); allBtn.className='flight-btn active';
+  allBtn.style.setProperty('--flight-color','var(--blue)'); allBtn.textContent='全部';
+  allBtn.onclick=()=>filterDelay('ALL',allBtn); bar.appendChild(allBtn);
+  FK.forEach(f=>{
+    const b=document.createElement('button'); b.className='flight-btn';
+    b.style.setProperty('--flight-color',FLIGHTS[f].color); b.textContent=f;
+    b.onclick=()=>filterDelay(f,b); bar.appendChild(b);
+  });
+}
+function buildHeatmapFilterButtons() {
+  const bar=document.getElementById('hm-flight-bar');
+  bar.querySelectorAll('.flight-btn').forEach(b=>b.remove());
+  const allBtn=document.createElement('button'); allBtn.className='flight-btn active';
+  allBtn.style.setProperty('--flight-color','var(--blue)'); allBtn.textContent='全部';
+  allBtn.onclick=()=>renderHeatmap('ALL',allBtn); bar.appendChild(allBtn);
+  FK.forEach(f=>{
+    const b=document.createElement('button'); b.className='flight-btn';
+    b.style.setProperty('--flight-color',FLIGHTS[f].color); b.textContent=f;
+    b.onclick=()=>renderHeatmap(f,b); bar.appendChild(b);
+  });
 }
 
 function renderHeatmap(flightFilter, btn) {
@@ -1294,6 +1379,8 @@ function selectCompareYearAxis(year, months){
 function buildCompareCharts(years, data){
 
   // ── Pax: per-flight overlays ──
+  document.getElementById('grid-c-pax').innerHTML = FK.map(f=>`<div class="card"><div class="card-title">${FLIGHTS[f].label}</div><div class="card-sub" id="sub-${f.toLowerCase()}"></div><div class="year-legend" id="leg-c-${f.toLowerCase()}"></div><canvas id="ch-c-${f.toLowerCase()}" height="180"></canvas></div>`).join('');
+  document.getElementById('ctotal-sub').textContent=FK.length+'航班合計';
   FK.forEach(f=>{
     const maxDays=Math.max(...years.map(y=>data[y].flightData[f].length));
     const dayLabels=Array.from({length:maxDays},(_,i)=>String(i+1));
@@ -1335,6 +1422,7 @@ function buildCompareCharts(years, data){
   });
 
   // ── LF overlays ──
+  document.getElementById('grid-c-lf').innerHTML = FK.map(f=>`<div class="card"><div class="card-title">${FLIGHTS[f].label}</div><div class="year-legend" id="leg-c-lf-${f.toLowerCase()}"></div><canvas id="ch-c-lf-${f.toLowerCase()}" height="180"></canvas></div>`).join('');
   FK.forEach(f=>{
     const maxD=Math.max(...years.map(y=>data[y].flightData[f].length));
     const dl=Array.from({length:maxD},(_,i)=>String(i+1));
@@ -1348,6 +1436,7 @@ function buildCompareCharts(years, data){
   // ── Upgrade ──
   mk('ch-c-upg-bar','bar',{labels:FK.map(f=>FLIGHTS[f].label),datasets:years.map(y=>({label:String(y),data:FK.map(f=>data[y].upgradeRecords.filter(r=>r.flight===f).length),backgroundColor:yearColor(y,years)+'bb',borderColor:yearColor(y,years),borderWidth:1,borderRadius:4}))},{...TT,plugins:{...TT.plugins,legend:{display:true,position:'top',align:'end',labels:{color:'#8496a9',boxWidth:10,padding:12,font:{size:11}}}},scales:{...BS,y:{...BS.y,min:0,ticks:{stepSize:1}}}});
   const upgCTbody=document.getElementById('upg-c-tbody'); upgCTbody.innerHTML='';
+  document.getElementById('upg-c-thead').innerHTML = `<th>年份</th>${FK.map(f=>`<th>${f}</th>`).join('')}<th>合計人次</th><th>費用 (TWD)</th>`;
   years.forEach((y,yi)=>{
     const tr=document.createElement('tr');
     const byFlight=FK.map(f=>data[y].upgradeRecords.filter(r=>r.flight===f).length);
@@ -1379,6 +1468,7 @@ function buildCompareCharts(years, data){
     div.innerHTML=`<div class="kpi-label">${kpi.label}</div><div class="kpi-years">${years.map((y,i)=>`<div class="kpi-year"><div class="kpi-yr-label">${y}</div><div class="kpi-yr-val" style="color:${kpi.color}">${kpi.fmt(vals[i])}</div></div>`).join('')}</div>${deltaHtml}`;
     dKpiEl.appendChild(div);
   });
+  document.getElementById('grid-c-delay').innerHTML = FK.map(f=>`<div class="card"><div class="card-title">${FLIGHTS[f].label} — 每日延誤分鐘</div><div class="card-sub">正值=延誤，負值=提早</div><div class="year-legend" id="leg-c-delay-${f.toLowerCase()}"></div><canvas id="ch-c-delay-${f.toLowerCase()}" height="180"></canvas></div>`).join('');
   FK.forEach(f=>{
     const maxD=Math.max(...years.map(y=>data[y].flightData[f].length));
     const dl=Array.from({length:maxD},(_,i)=>String(i+1));
