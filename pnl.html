@@ -560,7 +560,7 @@ function parsePNL() {
   // Deduplicate
   const seen = new Set();
   parsedData = parsedData.filter(p => {
-    const key = `${p.bn}|${p.name}|${p.ticket||''}|${p.seat}|${p.cabin}`;
+    const key = `${p.ticket||''}|${p.seat}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
