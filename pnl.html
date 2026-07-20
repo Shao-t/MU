@@ -458,7 +458,7 @@
           解析結果
           <span class="card-hint">點擊欄位標題排序，再點反轉</span>
         </div>
-        <button class="btn-sm" onclick="copyTSV()">⎘ 複製 TSV</button>
+        <button class="btn-sm" id="copy-btn" onclick="copyTSV()">⎘ 複製 TSV</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -666,7 +666,11 @@ function copyTSV() {
     if (p.ticket) lines.push(`${p.ticket}\t${p.cabin}`);
   }
   navigator.clipboard.writeText(lines.join('\n'));
-  alert('已複製 TSV（可直接貼入 Excel）');
+  const btn = document.getElementById('copy-btn');
+  const original = btn.textContent;
+  btn.textContent = '✓ 已複製';
+  clearTimeout(btn._resetTimer);
+  btn._resetTimer = setTimeout(() => { btn.textContent = original; }, 1200);
 }
 
 function clearAll() {
