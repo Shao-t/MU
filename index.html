@@ -1,3 +1,4 @@
+<!-- Aero Tools Minimal V4 verified 20260801-1719 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -10,153 +11,207 @@
   function gtag(){ dataLayer.push(arguments); }
   gtag('js', new Date());
   gtag('config', 'G-TYXN5DSX5K');
-
-  // Lightweight wrapper for future event tracking from the entry page.
-  function trackEvent(name, params = {}) {
-    if (typeof gtag === 'function') gtag('event', name, params);
-  }
+  function trackEvent(name, params = {}) { if (typeof gtag === 'function') gtag('event', name, params); }
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
   :root {
-    --bg: #eef2f7;
+    --bg: #f6f6f3;
+    --bg-accent: #f0f0eb;
     --card: #ffffff;
-    --border: #dde4ee;
-    --blue: #2d6bc4;
-    --blue-light: #e8f0fb;
-    --green: #2ca88e;
-    --red: #ef4444;
-    --text: #1a2535;
-    --text-2: #4b5a6e;
-    --text-3: #8496a9;
+    --surface: #fbfbf8;
+    --border: #e7e7e2;
+    --text: #171717;
+    --text-2: #5a5a55;
+    --text-3: #919189;
+    --blue: #4459d8;
+    --blue-soft: #eef1ff;
+    --green: #188b62;
+    --green-soft: #e9f7f1;
+    --red: #d9485f;
+    --shadow: 0 6px 24px rgba(18, 18, 18, 0.04);
+    --radius: 18px;
+    --radius-sm: 12px;
     --sans: 'Inter', 'Noto Sans TC', sans-serif;
-    --shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html, body {
+    height: 100%;
+  }
+
   body {
-    background: var(--bg);
+    background:
+      radial-gradient(circle at top left, rgba(68,89,216,.06), transparent 26%),
+      linear-gradient(180deg, #fafaf7 0%, var(--bg) 100%);
+    color: var(--text);
     font-family: var(--sans);
-    display: flex;
-    height: 100vh;
     overflow: hidden;
   }
 
-  /* Content area: topbar + iframe */
-  .content {
-    flex: 1;
+  .app-shell {
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    height: 100vh;
   }
 
-  /* Topbar */
+  .topbar-wrap {
+    padding: 20px 20px 14px;
+    flex-shrink: 0;
+  }
+
   .topbar {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    height: 52px;
+    background: rgba(255,255,255,.86);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(231,231,226,.95);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    min-height: 72px;
+    padding: 14px 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0;
-    box-shadow: var(--shadow);
+    gap: 16px;
   }
 
   .topbar-left {
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
   }
 
   .app-icon {
-    width: 32px; height: 32px;
-    background: var(--blue);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff;
-    font-size: 15px;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: var(--blue-soft);
+    color: var(--blue);
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    font-weight: 700;
     flex-shrink: 0;
+    border: 1px solid rgba(68,89,216,.12);
+  }
+
+  .topbar-copy {
+    min-width: 0;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 2px;
   }
 
   .app-name {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--text);
+    line-height: 1.1;
   }
 
   .app-sub {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-3);
-    margin-top: 1px;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .topbar-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .tab-pill {
-    display: flex;
-    background: var(--bg);
+    display: inline-flex;
+    padding: 4px;
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 3px;
-    gap: 2px;
+    border-radius: 999px;
+    gap: 4px;
   }
 
   .tab-btn {
     font-family: var(--sans);
     font-size: 12px;
-    font-weight: 500;
-    padding: 5px 14px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
+    font-weight: 600;
     color: var(--text-3);
     background: transparent;
-    transition: all 0.15s;
-    display: flex;
+    border: none;
+    border-radius: 999px;
+    padding: 9px 16px;
+    cursor: pointer;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
+    transition: background .18s ease, color .18s ease, transform .18s ease;
     white-space: nowrap;
   }
 
-  .tab-btn:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+  .tab-btn:hover {
+    color: var(--text);
+    transform: translateY(-1px);
+  }
 
   .tab-btn.active {
-    background: var(--card);
+    background: #fff;
     color: var(--blue);
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 10px rgba(18,18,18,.05);
   }
 
   .badge-online {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
-    background: #dcfce7;
-    color: #17a34a;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
+    gap: 8px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--green-soft);
+    border: 1px solid rgba(24,139,98,.08);
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 700;
   }
 
   .badge-online::before {
     content: '';
-    width: 6px; height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: #17a34a;
+    background: var(--green);
   }
 
-  /* iframe */
-  .iframe-wrap {
+  .content {
     flex: 1;
+    min-height: 0;
+    padding: 0 20px 20px;
+  }
+
+  .frame-card {
     position: relative;
+    height: 100%;
+    background: rgba(255,255,255,.72);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .iframe-wrap {
+    position: absolute;
+    inset: 0;
   }
 
   iframe {
@@ -166,96 +221,303 @@
     height: 100%;
     border: none;
     display: none;
+    background: transparent;
   }
 
   iframe.active { display: block; }
 
-  /* Feedback widget */
-  .fb-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; border: none; box-shadow: var(--shadow); cursor: pointer; font-size: 22px; z-index: 200; display: flex; align-items: center; justify-content: center; }
-  .fb-overlay { position: fixed; inset: 0; background: rgba(26,45,69,.45); display: none; align-items: center; justify-content: center; z-index: 201; }
+  .fb-fab {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 1px solid rgba(68,89,216,.14);
+    background: var(--blue);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    box-shadow: 0 10px 20px rgba(68,89,216,.18);
+    cursor: pointer;
+    z-index: 200;
+  }
+
+  .fb-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(23,23,23,.26);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 201;
+    padding: 18px;
+  }
+
   .fb-overlay.show { display: flex; }
-  .fb-box { background: var(--card); border-radius: 14px; padding: 22px 24px; width: min(380px,90vw); box-shadow: var(--shadow); }
-  .fb-box h3 { font-size: 15px; margin-bottom: 14px; color: var(--text); }
-  .fb-box select, .fb-box textarea, .fb-box input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--sans); margin-bottom: 10px; color: var(--text); background: var(--surface2, #f8fafc); }
-  .fb-box textarea { min-height: 80px; resize: vertical; }
-  .fb-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-  .fb-actions button { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer; background: #f5f7fa; color: var(--text); }
-  .fb-actions button:hover { opacity: 0.95; }
-  .fb-msg { font-size: 12px; margin-top: 8px; min-height: 16px; }
-  .fb-star-row { display: flex; gap: 5px; margin-bottom: 10px; }
-  .fb-star { font-size: 24px; cursor: pointer; color: #d1dce8; transition: color .1s, transform .1s; user-select: none; line-height: 1; }
-  .fb-star:hover, .fb-star.active { color: #f0b429; }
-  .fb-star:hover { transform: scale(1.15); }
-  .fb-star-hint { font-size: 11px; color: var(--text-3); margin-top: -6px; margin-bottom: 10px; min-height: 14px; }
+
+  .fb-box {
+    width: min(400px, 92vw);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 24px 48px rgba(17,17,17,.12);
+  }
+
+  .fb-box h3 {
+    font-size: 17px;
+    margin-bottom: 14px;
+  }
+
+  .fb-box select,
+  .fb-box textarea,
+  .fb-box input {
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 11px 12px;
+    font-size: 13px;
+    font-family: var(--sans);
+    margin-bottom: 10px;
+    outline: none;
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .fb-box select:focus,
+  .fb-box textarea:focus,
+  .fb-box input:focus {
+    border-color: rgba(68,89,216,.4);
+    box-shadow: 0 0 0 4px rgba(68,89,216,.08);
+  }
+
+  .fb-box textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  .fb-star-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .fb-star {
+    font-size: 24px;
+    cursor: pointer;
+    color: #d8d8d1;
+    line-height: 1;
+    transition: transform .15s ease, color .15s ease;
+  }
+
+  .fb-star:hover,
+  .fb-star.active { color: #f0b429; }
+
+  .fb-star:hover { transform: scale(1.1); }
+
+  .fb-star-hint,
+  .fb-msg {
+    min-height: 16px;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .fb-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .fb-actions button {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 15px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .fb-actions .primary {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+
+  @media (max-width: 760px) {
+    .topbar-wrap { padding: 14px 14px 10px; }
+    .content { padding: 0 14px 14px; }
+    .topbar {
+      min-height: auto;
+      padding: 14px;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .topbar-right {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .tab-pill {
+      overflow-x: auto;
+      max-width: 100%;
+    }
+    .tab-btn { padding: 8px 12px; }
+    .badge-online { height: 34px; }
+    .frame-card { border-radius: 18px; }
+  }
 </style>
+
+<style id="motion-v4">
+  @keyframes shellRise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes frameReveal {
+    from { opacity: 0; transform: translateY(10px) scale(.995); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .topbar { animation: shellRise .55s cubic-bezier(.16,1,.3,1) both; }
+  .frame-card { animation: frameReveal .65s .08s cubic-bezier(.16,1,.3,1) both; }
+  .app-icon {
+    font-size: 10px;
+    letter-spacing: .08em;
+    transition: transform .45s cubic-bezier(.34,1.56,.64,1), background .25s ease;
+  }
+  .topbar-left:hover .app-icon { transform: rotate(-3deg) scale(1.06); background: #e7eaff; }
+  .tab-pill { position: relative; isolation: isolate; }
+  .tab-indicator {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: calc(100% - 8px);
+    width: var(--indicator-width, 0px);
+    transform: translateX(var(--indicator-x, 0px));
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(18,18,18,.06);
+    transition: transform .42s cubic-bezier(.16,1,.3,1), width .42s cubic-bezier(.16,1,.3,1);
+    z-index: 0;
+  }
+  .tab-btn { position: relative; z-index: 1; overflow: hidden; }
+  .tab-btn.active { background: transparent; box-shadow: none; }
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    inset: auto 18% 4px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--blue);
+    transform: scaleX(0);
+    transition: transform .3s cubic-bezier(.16,1,.3,1);
+  }
+  .tab-btn.active::after { transform: scaleX(1); }
+  iframe {
+    display: block !important;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px) scale(.998);
+    transition: opacity .3s ease, transform .45s cubic-bezier(.16,1,.3,1);
+  }
+  iframe.active { opacity: 1; pointer-events: auto; transform: none; }
+  .fb-fab {
+    width: 58px;
+    border-radius: 18px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+  }
+  .fb-fab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 14px 26px rgba(68,89,216,.24); }
+  .fb-fab:active { transform: scale(.92); transition-duration: .08s; }
+  .fb-overlay.show .fb-box { animation: frameReveal .36s cubic-bezier(.16,1,.3,1) both; }
+  .fb-star {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-3);
+    background: var(--surface);
+  }
+  .fb-star:hover, .fb-star.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+
 </head>
 <body>
-
-<!-- Sidebar removed per request -->
-
-<!-- Content -->
-<div class="content">
-
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="app-icon" id="topbar-icon">✈</div>
-      <div>
-        <div class="app-name" id="topbar-name">PNL Parser</div>
-        <div class="app-sub" id="topbar-sub">旅客名單電報解析工具</div>
+<div class="app-shell">
+  <div class="topbar-wrap">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="app-icon" id="topbar-icon">PNL</div>
+        <div class="topbar-copy">
+          <div class="eyebrow">Aero Tools</div>
+          <div class="app-name" id="topbar-name">PNL Parser</div>
+          <div class="app-sub" id="topbar-sub">旅客名單電報解析工具</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="tab-pill">
+          <span class="tab-indicator" aria-hidden="true"></span>
+          <button class="tab-btn active" onclick="switchTo('pnl', this)" id="tab-pnl">PNL Parser</button>
+          <button class="tab-btn" onclick="switchTo('dashboard', this)" id="tab-dashboard">航線儀表板</button>
+        </div>
+        <div class="badge-online">Online</div>
       </div>
     </div>
-    <div class="topbar-right">
-      <div class="tab-pill">
-        <button class="tab-btn active" onclick="switchTo('pnl', this)" id="tab-pnl">
-          ✈ PNL Parser
-        </button>
-        <button class="tab-btn" onclick="switchTo('dashboard', this)" id="tab-dashboard">
-          📊 航線儀表板
-        </button>
+  </div>
+
+  <div class="content">
+    <div class="frame-card">
+      <div class="iframe-wrap">
+        <iframe id="frame-pnl" class="active" src="pnl.html?v=20260801-1719"></iframe>
+        <iframe id="frame-dashboard" src="flight-analytics.html?v=20260801-1719"></iframe>
       </div>
-      <div class="badge-online">Online</div>
     </div>
   </div>
 
-  <!-- iframes -->
-  <div class="iframe-wrap">
-    <iframe id="frame-pnl" class="active" src="pnl.html"></iframe>
-    <iframe id="frame-dashboard" src="flight-analytics.html"></iframe>
-  </div>
-
-<button class="fb-fab" id="fb-fab" title="問題回報 / 建議" onclick="fbOpen()">💬</button>
-<div class="fb-overlay" id="fb-overlay">
-  <div class="fb-box">
-    <h3>問題回報 / 建議</h3>
-    <select id="fb-type">
-      <option value="問題">問題</option>
-      <option value="建議">建議</option>
-    </select>
-    <textarea id="fb-desc" placeholder="請描述你遇到的問題或建議..."></textarea>
-    <div class="fb-star-row" id="fb-star-row">
-      <span class="fb-star" data-val="1">★</span>
-      <span class="fb-star" data-val="2">★</span>
-      <span class="fb-star" data-val="3">★</span>
-      <span class="fb-star" data-val="4">★</span>
-      <span class="fb-star" data-val="5">★</span>
+  <button class="fb-fab" id="fb-fab" title="問題回報 / 建議" onclick="fbOpen()">回報</button>
+  <div class="fb-overlay" id="fb-overlay">
+    <div class="fb-box">
+      <h3>問題回報 / 建議</h3>
+      <select id="fb-type">
+        <option value="問題">問題</option>
+        <option value="建議">建議</option>
+      </select>
+      <textarea id="fb-desc" placeholder="請描述你遇到的問題或建議..."></textarea>
+      <div class="fb-star-row" id="fb-star-row">
+        <span class="fb-star" data-val="1">1</span>
+        <span class="fb-star" data-val="2">2</span>
+        <span class="fb-star" data-val="3">3</span>
+        <span class="fb-star" data-val="4">4</span>
+        <span class="fb-star" data-val="5">5</span>
+      </div>
+      <div class="fb-star-hint" id="fb-star-hint"></div>
+      <input id="fb-contact" placeholder="聯絡方式（選填）">
+      <div class="fb-actions">
+        <button type="button" onclick="fbClose()">取消</button>
+        <button type="button" class="primary" onclick="fbSubmit()">送出</button>
+      </div>
+      <div class="fb-msg" id="fb-msg"></div>
     </div>
-    <div class="fb-star-hint" id="fb-star-hint"></div>
-    <input id="fb-contact" placeholder="聯絡方式（選填）">
-    <div class="fb-actions">
-      <button type="button" onclick="fbClose()">取消</button>
-      <button type="button" style="background:var(--blue);color:#fff;border-color:var(--blue)" onclick="fbSubmit()">送出</button>
-    </div>
-    <div class="fb-msg" id="fb-msg"></div>
   </div>
-</div>
-
 </div>
 
 <script>
 const meta = {
-  pnl:       { icon: '✈', name: 'PNL Parser',   sub: '旅客名單電報解析工具' },
-  dashboard: { icon: '📊', name: '航線儀表板',   sub: '月度航班統計視覺化報表' }
+  pnl:       { icon: 'PNL', name: 'PNL Parser',   sub: '旅客名單電報解析工具' },
+  dashboard: { icon: 'DATA', name: '航線儀表板',   sub: '月度航班統計視覺化報表' }
 };
 
 function switchTo(name, navEl) {
@@ -267,14 +529,13 @@ function switchTo(name, navEl) {
   document.getElementById('topbar-icon').textContent = meta[name].icon;
   document.getElementById('topbar-name').textContent = meta[name].name;
   document.getElementById('topbar-sub').textContent  = meta[name].sub;
+  updateShellIndicator(navEl);
   trackEvent('switch_tab', { tab_name: name });
 }
 
 const FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyyLemZKexsiJmzsBWDUzTuOXwKUzWZV3FLjozjWh58w47iEqD0T7Cl63pXFn-ipCokFQ/exec';
-
 function fbOpen(){ document.getElementById('fb-overlay').classList.add('show'); document.getElementById('fb-msg').textContent=''; }
 function fbClose(){ document.getElementById('fb-overlay').classList.remove('show'); }
-
 const FB_STAR_LABELS = ['','很差','不太好','普通','不錯','非常好'];
 let fbRating = 0;
 document.querySelectorAll('.fb-star').forEach(s => {
@@ -304,5 +565,19 @@ async function fbSubmit(){
   }
 }
 </script>
+
+<script id="motion-v4-js">
+function updateShellIndicator(activeBtn = document.querySelector('.tab-btn.active')) {
+  const pill = document.querySelector('.tab-pill');
+  if (!pill || !activeBtn) return;
+  const pillRect = pill.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  pill.style.setProperty('--indicator-width', btnRect.width + 'px');
+  pill.style.setProperty('--indicator-x', (btnRect.left - pillRect.left - 4) + 'px');
+}
+window.addEventListener('DOMContentLoaded', () => requestAnimationFrame(() => updateShellIndicator()));
+window.addEventListener('resize', () => updateShellIndicator());
+</script>
+
 </body>
 </html>

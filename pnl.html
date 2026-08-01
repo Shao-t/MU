@@ -1,3 +1,4 @@
+<!-- Aero Tools Minimal V4 verified 20260801-1719 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -199,6 +200,8 @@
     box-shadow: 0 3px 10px rgba(67,97,238,0.3);
   }
   .btn-primary:hover { background: #3451d1; box-shadow: 0 4px 14px rgba(67,97,238,0.4); }
+  .btn-primary { transition: background 0.15s, box-shadow 0.15s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  .btn-primary:active { transform: scale(0.92); transition: transform 0.08s ease-out; }
 
   .btn-ghost {
     background: transparent;
@@ -217,6 +220,34 @@
     border: 1px solid var(--border);
   }
   .btn-sm:hover { background: #e8eaed; }
+
+  .copy-btn {
+    position: relative;
+    overflow: hidden;
+    transition: background 0.15s, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .copy-btn:active { transform: scale(0.93); transition: transform 0.08s ease-out; }
+  .copy-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .copy-label-success {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    opacity: 0;
+    transform: scale(0.5);
+    color: var(--green);
+    font-weight: 600;
+  }
+  .copy-btn.copied { background: #ecfdf5; border-color: #a7f3d0; }
+  .copy-btn.copied .copy-label-default { opacity: 0; transform: scale(0.6); }
+  .copy-btn.copied .copy-label-success { opacity: 1; transform: scale(1); }
 
   /* Feedback widget */
   .fb-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; border: none; box-shadow: var(--shadow); cursor: pointer; font-size: 22px; z-index: 200; display: flex; align-items: center; justify-content: center; }
@@ -250,8 +281,35 @@
     100% { transform: translate(var(--fx), var(--fy)) scale(0.3); opacity: 0; }
   }
 
+  /* ── Result section entrance (stagger entrance) ── */
+  #result-section {
+    display: none;
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.45s cubic-bezier(0.16,1,0.3,1),
+                transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  }
+  #result-section.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Input error shake ── */
+  @keyframes shake-x {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+  }
+  .input-card.shake {
+    animation: shake-x 0.45s cubic-bezier(0.36,0.07,0.19,0.97) both;
+  }
+  textarea.error {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+  }
+
   /* ── Stat cards ── */
-  #result-section { display: none; }
 
   .stats-row {
     display: flex;
@@ -267,6 +325,14 @@
     padding: 12px 18px;
     min-width: 90px;
     flex: 1;
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+    transition: opacity 0.4s cubic-bezier(0.34,1.56,0.64,1),
+                transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .stat-chip.in {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 
   .stat-chip-num {
@@ -428,6 +494,179 @@
   /* ── Divider ── */
   .section-gap { margin-bottom: 16px; }
 </style>
+
+<style id="minimal-retheme">
+  :root {
+    --bg: #f6f6f3;
+    --card: #ffffff;
+    --border: #e7e7e2;
+    --blue: #4459d8;
+    --blue-lt: #eef1ff;
+    --green: #188b62;
+    --green-lt: #eaf7f1;
+    --orange: #df8a43;
+    --orange-lt: #fff2e8;
+    --red: #d9485f;
+    --red-lt: #fff0f2;
+    --yellow: #c98a11;
+    --yellow-lt: #fff7df;
+    --purple: #7c61d9;
+    --purple-lt: #f3efff;
+    --text: #171717;
+    --text-2: #5a5a55;
+    --text-3: #919189;
+    --shadow: 0 8px 24px rgba(18,18,18,0.04);
+    --shadow-md: 0 16px 32px rgba(18,18,18,0.06);
+    --radius: 18px;
+    --radius-sm: 12px;
+  }
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(68,89,216,.05), transparent 28%),
+      linear-gradient(180deg, #fafaf7 0%, var(--bg) 100%);
+  }
+  .shell {
+    max-width: 1180px;
+    padding: 28px 24px 60px;
+  }
+  .topbar { display: none; }
+  .intro-card {
+    margin-bottom: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.88));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px 24px;
+  }
+  .intro-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .intro-title {
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -.03em;
+    font-weight: 800;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .intro-title span { color: var(--blue); }
+  .intro-sub {
+    font-size: 13px;
+    color: var(--text-2);
+    max-width: 760px;
+    line-height: 1.7;
+  }
+  .card {
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .input-card textarea {
+    background: #fbfbf8;
+    border-color: var(--border);
+    min-height: 180px;
+  }
+  .input-card .card-header { margin-bottom: 16px; }
+  .card-title { font-size: 16px; }
+  .card-hint { font-size: 12px; }
+  .btn-primary {
+    background: var(--blue);
+    box-shadow: 0 8px 16px rgba(68,89,216,.14);
+  }
+  .btn-primary:hover { background: #394dc8; box-shadow: 0 10px 18px rgba(68,89,216,.18); }
+  .btn-ghost, .btn-sm {
+    background: #fbfbf8;
+    color: var(--text-2);
+  }
+  .btn-row { margin-top: 16px; }
+  .stats-row { gap: 10px; }
+  .stat-chip {
+    background: #fff;
+    border: 1px solid var(--border);
+    box-shadow: 0 3px 10px rgba(17,17,17,.02);
+  }
+  .table-wrap { border-color: var(--border); background: #fff; }
+  thead tr { background: #fbfbf8; }
+  tbody tr:hover td { background: #fcfcf9; }
+  .copy-btn.copied { background: #edf8f3; }
+  .fb-fab, .fb-overlay { display: none !important; }
+  @media (max-width: 680px) {
+    .shell { padding: 18px 14px 32px; }
+    .intro-card { padding: 18px 18px; }
+    .intro-title { font-size: 22px; }
+    .card { padding: 18px; }
+    .stats-row { flex-direction: column; }
+  }
+</style>
+
+
+<style id="motion-v4">
+  @keyframes cardRise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes rowReveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes successHalo {
+    0% { box-shadow: 0 0 0 0 rgba(24,139,98,.28); }
+    100% { box-shadow: 0 0 0 14px rgba(24,139,98,0); }
+  }
+  .shell { padding-top: 28px; }
+  .input-card {
+    position: relative;
+    overflow: hidden;
+    animation: cardRise .55s cubic-bezier(.16,1,.3,1) both;
+    transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, border-color .25s ease;
+  }
+  .input-card::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    top: 0;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    transform: scaleX(0);
+    transition: transform .45s cubic-bezier(.16,1,.3,1);
+  }
+  .input-card:focus-within {
+    transform: translateY(-2px);
+    border-color: rgba(68,89,216,.22);
+    box-shadow: 0 16px 38px rgba(18,18,18,.065);
+  }
+  .input-card:focus-within::before { transform: scaleX(1); }
+  textarea { transition: border-color .2s ease, box-shadow .2s ease, background .25s ease, transform .25s ease; }
+  textarea:focus { background: #fff; transform: translateY(-1px); }
+  button { position: relative; overflow: hidden; }
+  button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
+    transform: translateX(-140%);
+    transition: transform .65s cubic-bezier(.16,1,.3,1);
+  }
+  button:hover::after { transform: translateX(140%); }
+  .btn-primary:hover, .btn-ghost:hover, .btn-sm:hover { transform: translateY(-2px); }
+  .btn-primary:active, .btn-ghost:active, .btn-sm:active { transform: scale(.94); transition-duration: .08s; }
+  #result-section.show .card { animation: cardRise .52s .08s cubic-bezier(.16,1,.3,1) both; }
+  #result-body tr { opacity: 0; animation: rowReveal .38s cubic-bezier(.16,1,.3,1) forwards; }
+  .stat-chip { transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease, border-color .25s ease; }
+  .stat-chip:hover { transform: translateY(-4px); border-color: rgba(68,89,216,.2); box-shadow: 0 12px 22px rgba(18,18,18,.055); }
+  .copy-btn.success-pulse { animation: successHalo .65s ease-out; }
+  .logo-icon { font-size: 10px; letter-spacing: .08em; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+
 </head>
 <body>
 
@@ -436,7 +675,7 @@
   <!-- Topbar -->
   <div class="topbar">
     <div class="logo">
-      <div class="logo-icon">✈</div>
+      <div class="logo-icon">PNL</div>
       <div>
         <div class="logo-text">PNL Parser</div>
         <div class="logo-sub">Passenger Name List 解析工具</div>
@@ -454,7 +693,7 @@
     </div>
     <textarea id="pnl-input" placeholder="貼上 PNL 電報內容..."></textarea>
     <div class="btn-row">
-      <button class="btn-primary" onclick="parsePNL()">▶ 解析</button>
+      <button class="btn-primary" onclick="parsePNL()">解析</button>
       <button class="btn-ghost" onclick="clearAll()">清除</button>
     </div>
   </div>
@@ -472,7 +711,10 @@
           解析結果
           <span class="card-hint">點擊欄位標題排序，再點反轉</span>
         </div>
-        <button class="btn-sm" id="copy-btn" onclick="copyTSV()">⎘ 複製 TSV</button>
+        <button class="btn-sm copy-btn" id="copy-btn" onclick="copyTSV()">
+      <span class="copy-label copy-label-default">複製 TSV</span>
+      <span class="copy-label copy-label-success">已複製</span>
+    </button>
       </div>
       <div class="table-wrap">
         <table>
@@ -544,8 +786,20 @@ function sortTable(key) {
 }
 
 function parsePNL() {
-  const raw = document.getElementById('pnl-input').value.trim();
-  if (!raw) return;
+  const inputEl = document.getElementById('pnl-input');
+  const raw = inputEl.value.trim();
+  if (!raw) {
+    inputEl.classList.add('error');
+    const card = inputEl.closest('.input-card');
+    card.classList.remove('shake');
+    void card.offsetWidth; // force reflow so animation can retrigger
+    card.classList.add('shake');
+    clearTimeout(inputEl._errTimer);
+    inputEl._errTimer = setTimeout(() => inputEl.classList.remove('error'), 1400);
+    setTimeout(() => card.classList.remove('shake'), 500);
+    inputEl.focus();
+    return;
+  }
 
   parsedData = [];
   currentSort = { key: null, dir: 1 };
@@ -612,7 +866,10 @@ function parsePassenger(text, idx) {
 
 function renderResults() {
   if (parsedData.length === 0) return;
-  document.getElementById('result-section').style.display = 'block';
+  const section = document.getElementById('result-section');
+  section.style.display = 'block';
+  section.classList.remove('show');
+  requestAnimationFrame(() => requestAnimationFrame(() => section.classList.add('show')));
 
   // Stats
   const classCounts = {};
@@ -629,24 +886,33 @@ function renderResults() {
   let statsHtml = sortedCabins.map(([c,n]) => {
     const col = cabinColor[c] || 'num-default';
     return `<div class="stat-chip">
-      <div class="stat-chip-num ${col}">${n}</div>
+      <div class="stat-chip-num ${col}" data-target="${n}">0</div>
       <div class="stat-chip-label">${c} 艙</div>
     </div>`;
   }).join('');
 
   statsHtml += `<div class="stat-chip">
-    <div class="stat-chip-num num-default">${parsedData.length}</div>
+    <div class="stat-chip-num num-default" data-target="${parsedData.length}">0</div>
     <div class="stat-chip-label">Total PAX</div>
   </div>`;
 
   if (noTicket > 0) {
     statsHtml += `<div class="stat-chip">
-      <div class="stat-chip-num num-red">${noTicket}</div>
+      <div class="stat-chip-num num-red" data-target="${noTicket}">0</div>
       <div class="stat-chip-label">No Ticket</div>
     </div>`;
   }
 
-  document.getElementById('stats-row').innerHTML = statsHtml;
+  const statsRow = document.getElementById('stats-row');
+  statsRow.innerHTML = statsHtml;
+
+  // Stagger each chip in, then count its number up
+  statsRow.querySelectorAll('.stat-chip').forEach((chip, i) => {
+    setTimeout(() => {
+      chip.classList.add('in');
+      animateCount(chip.querySelector('.stat-chip-num'));
+    }, i * 90);
+  });
 
   // Rows
   const rows = parsedData.map((p, i) => {
@@ -671,7 +937,26 @@ function renderResults() {
     </tr>`;
   }).join('');
 
-  document.getElementById('result-body').innerHTML = rows;
+  const resultBody = document.getElementById('result-body');
+  resultBody.innerHTML = rows;
+  resultBody.querySelectorAll('tr').forEach((row, i) => {
+    row.style.animationDelay = Math.min(i * 24, 360) + 'ms';
+  });
+}
+
+function animateCount(el) {
+  const target = parseInt(el.dataset.target, 10);
+  if (Number.isNaN(target)) return;
+  const duration = 600;
+  const t0 = performance.now();
+  function step(t) {
+    const p = Math.min((t - t0) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    el.textContent = Math.round(target * eased);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
 }
 
 function copyTSV() {
@@ -681,37 +966,28 @@ function copyTSV() {
   }
   navigator.clipboard.writeText(lines.join('\n'));
   const btn = document.getElementById('copy-btn');
-  const original = btn.textContent;
-  btn.textContent = '✓ 已複製';
+  btn.classList.add('copied');
   clearTimeout(btn._resetTimer);
-  btn._resetTimer = setTimeout(() => { btn.textContent = original; }, 1200);
-  fireworkBurst(btn);
+  btn._resetTimer = setTimeout(() => { btn.classList.remove('copied'); }, 1400);
+  successPulse(btn);
 }
 
-function fireworkBurst(btn) {
-  const rect = btn.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-  const colors = ['#4361ee','#2cb67d','#f4845f','#f59e0b','#7c3aed','#ef4444'];
-  const count = 24;
-  for (let i = 0; i < count; i++) {
-    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
-    const dist = 50 + Math.random() * 50;
-    const p = document.createElement('div');
-    p.className = 'firework-particle';
-    p.style.left = cx + 'px';
-    p.style.top = cy + 'px';
-    p.style.background = colors[i % colors.length];
-    p.style.setProperty('--fx', Math.cos(angle) * dist + 'px');
-    p.style.setProperty('--fy', Math.sin(angle) * dist + 'px');
-    document.body.appendChild(p);
-    p.addEventListener('animationend', () => p.remove());
-  }
+function successPulse(btn) {
+  btn.classList.remove('success-pulse');
+  void btn.offsetWidth;
+  btn.classList.add('success-pulse');
+  clearTimeout(btn._pulseTimer);
+  btn._pulseTimer = setTimeout(() => btn.classList.remove('success-pulse'), 650);
 }
 
 function clearAll() {
-  document.getElementById('pnl-input').value = '';
-  document.getElementById('result-section').style.display = 'none';
+  const inputEl = document.getElementById('pnl-input');
+  inputEl.value = '';
+  inputEl.classList.remove('error');
+  const section = document.getElementById('result-section');
+  section.classList.remove('show');
+  section.style.display = 'none';
+  document.getElementById('copy-btn').classList.remove('copied');
   parsedData = [];
   currentSort = { key: null, dir: 1 };
 }

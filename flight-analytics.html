@@ -1,3 +1,4 @@
+<!-- Aero Tools Minimal V4 verified 20260801-1719 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -285,6 +286,318 @@ button.btn-secondary:hover { background: var(--surface2); }
 .fb-star:hover { transform: scale(1.15); }
 .fb-star-hint { font-size: 11px; color: var(--text-3); margin-top: -6px; margin-bottom: 10px; min-height: 14px; }
 </style>
+
+<style id="minimal-retheme">
+  :root {
+    --bg: #f6f6f3;
+    --card: #ffffff;
+    --surface2: #fbfbf8;
+    --border: #e7e7e2;
+    --text: #171717;
+    --text-2: #5a5a55;
+    --text-3: #919189;
+    --blue: #4459d8;
+    --blue-light: #eef1ff;
+    --red: #d9485f;
+    --green: #188b62;
+    --amber: #d19a1d;
+    --purple: #7c61d9;
+    --orange: #df8a43;
+    --sidebar: #171717;
+    --shadow: 0 8px 28px rgba(18,18,18,.04);
+  }
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(68,89,216,.05), transparent 25%),
+      linear-gradient(180deg, #fafaf7 0%, var(--bg) 100%);
+    font-size: 14px;
+  }
+  #upload-screen {
+    padding: 36px 20px 48px;
+    background:
+      radial-gradient(circle at top center, rgba(68,89,216,.06), transparent 30%),
+      linear-gradient(180deg, #fafaf7 0%, var(--bg) 100%);
+  }
+  .upload-title { font-size: 30px; letter-spacing: -.04em; }
+  .upload-sub { font-size: 14px; color: var(--text-2); }
+  .mode-toggle,
+  .drop-zone,
+  .format-note,
+  .kpi,
+  .kpi-card,
+  .card,
+  .ma-bar,
+  .tabs,
+  #month-bar,
+  #flight-filter-bar,
+  header {
+    box-shadow: var(--shadow);
+  }
+  .mode-toggle,
+  .drop-zone,
+  .format-note,
+  .card,
+  .kpi-card,
+  header,
+  .ma-bar,
+  #month-bar,
+  #flight-filter-bar,
+  .kpi {
+    border-color: var(--border);
+  }
+  .mode-toggle,
+  .drop-zone,
+  .format-note,
+  .card,
+  header,
+  .ma-bar,
+  #month-bar,
+  #flight-filter-bar,
+  .tabs {
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(10px);
+  }
+  .mode-toggle,
+  .drop-zone,
+  .format-note,
+  .card,
+  .kpi-card,
+  .month-pill,
+  .flight-btn,
+  .btn-primary,
+  .btn-secondary,
+  .hdr-reset,
+  .hdr-mode-switch,
+  .ma-toggle {
+    border-radius: 14px;
+  }
+  header {
+    background: rgba(255,255,255,.92);
+    padding: 16px 26px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  header::before { display: none; }
+  .hdr-eyebrow, .hdr-badge { color: var(--text-3); }
+  .hdr-badge,
+  .hdr-mode-switch,
+  .hdr-reset {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+  }
+  h1 { color: var(--text); font-size: 22px; }
+  h1 span { color: var(--blue); }
+  .hdr-mode-btn { color: var(--text-3); }
+  .hdr-mode-btn.active {
+    background: #fff;
+    color: var(--blue);
+  }
+  .hdr-reset:hover { background: #fff; color: var(--text); }
+  .kpi-row {
+    gap: 10px;
+    padding: 12px 26px 0;
+    background: transparent;
+    border: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .kpi {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 18px;
+  }
+  .kpi::after { height: 4px; }
+  .tabs {
+    margin: 12px 26px 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .tab {
+    border: none;
+    border-radius: 12px;
+    padding: 11px 14px;
+  }
+  .tab.active {
+    background: #fff;
+    color: var(--blue);
+    box-shadow: 0 4px 14px rgba(18,18,18,.04);
+  }
+  .content {
+    padding: 18px 26px 40px;
+    background: transparent;
+  }
+  .card {
+    border-radius: 16px;
+    padding: 18px 18px;
+    margin-bottom: 14px;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { background: rgba(68,89,216,.03); }
+  .mode-btn.active,
+  .btn-primary,
+  .month-pill.active { background: var(--blue); color: #fff; }
+  button.btn-primary:hover { background: #394dc8; }
+  button.btn-secondary,
+  .flight-btn,
+  .month-pill,
+  .ma-toggle,
+  .drop-zone,
+  .format-note,
+  .mode-toggle,
+  .mode-btn,
+  .dt th,
+  .heatmap-table td.hm-cell {
+    background-color: var(--surface2);
+  }
+  .dt th { background: #fbfbf8; }
+  .dt tr:hover td { background: #fcfcf9; }
+  .delay-row-late30 td { background: rgba(217,72,95,.05) !important; }
+  .kpi-grid { gap: 12px; }
+  .kpi-card { background: #fff; }
+  .ma-bar { margin: 0 26px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 16px 16px; }
+  #flight-filter-bar, #month-bar { margin: 0 26px; border: 1px solid var(--border); border-top: none; }
+  #flight-filter-bar { border-radius: 0; }
+  #month-bar { border-radius: 0 0 16px 16px; }
+  .fb-fab, .fb-overlay { display: none !important; }
+  .chart-grid-2 { gap: 14px; }
+  @media (max-width: 900px) {
+    .kpi-row, .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    header { flex-wrap: wrap; }
+    .tabs, .content, .ma-bar, #flight-filter-bar, #month-bar { margin-left: 14px; margin-right: 14px; }
+    .kpi-row { padding-left: 14px; padding-right: 14px; }
+    .content { padding-left: 14px; padding-right: 14px; }
+  }
+  @media (max-width: 640px) {
+    .mode-toggle, .chart-grid-2, .kpi-row, .kpi-grid { grid-template-columns: 1fr; display: grid; }
+    .mode-toggle { display: flex; flex-direction: column; width: min(520px, 92vw); }
+    .kpi-row { gap: 10px; }
+    .tabs { overflow-x: auto; white-space: nowrap; }
+    .tab { flex: 0 0 auto; }
+    .content { padding-bottom: 24px; }
+  }
+</style>
+
+
+<style id="motion-v4">
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes dropSweep {
+    0% { transform: translateX(-160%) skewX(-18deg); }
+    55%, 100% { transform: translateX(220%) skewX(-18deg); }
+  }
+  @keyframes progressFlow {
+    from { background-position: 0 0; }
+    to { background-position: 32px 0; }
+  }
+  #upload-screen > * { animation: riseIn .55s cubic-bezier(.16,1,.3,1) both; }
+  #upload-screen > *:nth-child(2) { animation-delay: .04s; }
+  #upload-screen > *:nth-child(3) { animation-delay: .08s; }
+  #upload-screen > *:nth-child(4) { animation-delay: .12s; }
+  #upload-screen > *:nth-child(5) { animation-delay: .16s; }
+  #upload-screen > *:nth-child(n+6) { animation-delay: .2s; }
+  .mode-btn, .drop-zone, button, .tab, .flight-btn, .month-pill, .ma-toggle {
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .28s ease, border-color .24s ease, background .24s ease, color .24s ease;
+  }
+  .mode-btn:hover, .flight-btn:hover, .month-pill:hover, .ma-toggle:hover { transform: translateY(-2px); }
+  .mode-btn:active, button:active, .flight-btn:active, .month-pill:active, .ma-toggle:active { transform: scale(.94); transition-duration: .08s; }
+  .mode-icon {
+    width: 30px;
+    height: 24px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 10px !important;
+    letter-spacing: .08em;
+    background: rgba(68,89,216,.08);
+    color: var(--blue);
+  }
+  .mode-btn.active .mode-icon { background: rgba(255,255,255,.16); color: #fff; }
+  .drop-zone { position: relative; overflow: hidden; }
+  .drop-zone::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    bottom: -20%;
+    width: 28%;
+    left: -38%;
+    background: linear-gradient(90deg, transparent, rgba(68,89,216,.09), transparent);
+    pointer-events: none;
+  }
+  .drop-zone:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(18,18,18,.065); }
+  .drop-zone:hover::after, .drop-zone.drag-over::after { animation: dropSweep 1.5s cubic-bezier(.16,1,.3,1) infinite; }
+  .drop-zone.drag-over { transform: scale(1.012); border-color: var(--blue); }
+  .drop-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 14px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--blue);
+    background: var(--blue-light);
+    opacity: 1;
+    transition: transform .45s cubic-bezier(.34,1.56,.64,1);
+  }
+  .drop-zone:hover .drop-icon { transform: translateY(-4px) rotate(-3deg) scale(1.06); }
+  .progress-fill {
+    background: repeating-linear-gradient(115deg, var(--blue) 0 14px, #6375e8 14px 28px);
+    background-size: 32px 100%;
+    animation: progressFlow .9s linear infinite;
+  }
+  header { animation: riseIn .5s cubic-bezier(.16,1,.3,1) both; }
+  .kpi { animation: riseIn .5s cubic-bezier(.16,1,.3,1) both; transition: transform .32s cubic-bezier(.34,1.56,.64,1), box-shadow .28s ease; }
+  .kpi:nth-child(2) { animation-delay: .05s; }
+  .kpi:nth-child(3) { animation-delay: .1s; }
+  .kpi:nth-child(4) { animation-delay: .15s; }
+  .kpi:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(18,18,18,.06); }
+  .tabs { position: relative; isolation: isolate; --tab-x: 0px; --tab-w: 0px; }
+  .tabs::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: var(--tab-w);
+    transform: translateX(var(--tab-x));
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(18,18,18,.05);
+    transition: transform .42s cubic-bezier(.16,1,.3,1), width .42s cubic-bezier(.16,1,.3,1);
+    z-index: 0;
+  }
+  .tab { position: relative; z-index: 1; }
+  .tab.active { background: transparent; box-shadow: none; }
+  .page.active > .card, .page.active > .chart-grid-2, .page.active > .single-content > .card, .page.active > .single-content > .chart-grid-2, .page.active > .compare-content > .card, .page.active > .compare-content > .chart-grid-2, .page.active > .compare-content > .section-hdr {
+    animation: riseIn .48s cubic-bezier(.16,1,.3,1) both;
+  }
+  .card { transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease, border-color .25s ease; }
+  .card:hover { transform: translateY(-2px); border-color: rgba(68,89,216,.16); box-shadow: 0 14px 30px rgba(18,18,18,.055); }
+  .fb-star {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-3);
+    background: var(--surface2);
+  }
+  .fb-star:hover, .fb-star.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+
 </head>
 <body>
 
@@ -297,12 +610,12 @@ button.btn-secondary:hover { background: var(--surface2); }
   <!-- Mode toggle -->
   <div class="mode-toggle">
     <button class="mode-btn active" id="btn-mode-single" onclick="setMode('single')">
-      <span class="mode-icon">📊</span>
+      <span class="mode-icon">01</span>
       <span class="mode-label">單月分析</span>
       <span class="mode-desc">上傳一個月份</span>
     </button>
     <button class="mode-btn" id="btn-mode-compare" onclick="setMode('compare')">
-      <span class="mode-icon">📈</span>
+      <span class="mode-icon">02</span>
       <span class="mode-label">年度比較</span>
       <span class="mode-desc">上傳多年同月份</span>
     </button>
@@ -310,7 +623,7 @@ button.btn-secondary:hover { background: var(--surface2); }
 
   <div class="drop-zone" id="drop-zone">
     <input type="file" id="file-input" accept=".xls,.xlsx">
-    <div class="drop-icon">📂</div>
+    <div class="drop-icon">XLS</div>
     <div class="drop-label" id="drop-label">拖放 XLS 檔案到此處</div>
     <div class="drop-hint">或 <span onclick="document.getElementById('file-input').click()">點擊選擇檔案</span></div>
   </div>
@@ -318,7 +631,7 @@ button.btn-secondary:hover { background: var(--surface2); }
   <div class="file-list" id="file-list"></div>
 
   <div class="action-row" id="compare-action" style="display:none">
-    <button class="btn-primary" onclick="processCompareFiles()">▶ 開始解析</button>
+    <button class="btn-primary" onclick="processCompareFiles()">開始解析</button>
     <button class="btn-secondary" onclick="clearCompareFiles()">清除</button>
   </div>
 
@@ -350,7 +663,7 @@ button.btn-secondary:hover { background: var(--surface2); }
       <button class="hdr-mode-btn" id="hdr-btn-compare" onclick="switchAppMode('compare')">比較</button>
     </div>
 
-    <button class="hdr-reset" onclick="resetAll()">↩ 重新上傳</button>
+    <button class="hdr-reset" onclick="resetAll()">重新上傳</button>
   </header>
 
   <!-- MA toggle bar (single + compare, pax/lf tabs) -->
@@ -560,7 +873,7 @@ button.btn-secondary:hover { background: var(--surface2); }
   </div><!-- end .content -->
 </div><!-- end #app -->
 
-<button class="fb-fab" id="fb-fab" title="問題回報 / 建議" onclick="fbOpen()">💬</button>
+<button class="fb-fab" id="fb-fab" title="問題回報 / 建議" onclick="fbOpen()">回報</button>
 <div class="fb-overlay" id="fb-overlay">
   <div class="fb-box">
     <h3>問題回報 / 建議</h3>
@@ -570,11 +883,11 @@ button.btn-secondary:hover { background: var(--surface2); }
     </select>
     <textarea id="fb-desc" placeholder="請描述你遇到的問題或建議..."></textarea>
     <div class="fb-star-row" id="fb-star-row">
-      <span class="fb-star" data-val="1">★</span>
-      <span class="fb-star" data-val="2">★</span>
-      <span class="fb-star" data-val="3">★</span>
-      <span class="fb-star" data-val="4">★</span>
-      <span class="fb-star" data-val="5">★</span>
+      <span class="fb-star" data-val="1">1</span>
+        <span class="fb-star" data-val="2">2</span>
+        <span class="fb-star" data-val="3">3</span>
+        <span class="fb-star" data-val="4">4</span>
+        <span class="fb-star" data-val="5">5</span>
     </div>
     <div class="fb-star-hint" id="fb-star-hint"></div>
     <input id="fb-contact" placeholder="聯絡方式（選填）">
@@ -905,7 +1218,7 @@ fileInput.addEventListener('change', () => {
 dropZone.addEventListener('click', e => { if(e.target !== fileInput) fileInput.click(); });
 
 function setProgress(pct,msg){ progWrap.style.display='block'; progFill.style.width=pct+'%'; progMsg.textContent=msg; }
-function showError(msg){ errMsgEl.style.display='block'; errMsgEl.textContent='⚠ '+msg; progWrap.style.display='none'; }
+function showError(msg){ errMsgEl.style.display='block'; errMsgEl.textContent=msg; progWrap.style.display='none'; }
 function clearError(){ errMsgEl.style.display='none'; }
 
 // ── Single mode ──
@@ -955,7 +1268,7 @@ function renderCompareFileList(){
   const el=document.getElementById('file-list'); el.innerHTML='';
   compareFiles.forEach((pf,i)=>{
     const chip=document.createElement('div'); chip.className='file-chip'+(pf.error?' error':'');
-    chip.innerHTML=`${pf.error?'⚠ ':''}${pf.month||''} ${pf.year||''} <span class="remove" onclick="removeCompareFile(${i})">×</span>`;
+    chip.innerHTML=`${pf.error?'ERROR ':''}${pf.month||''} ${pf.year||''} <span class="remove" onclick="removeCompareFile(${i})">×</span>`;
     chip.title=pf.name; el.appendChild(chip);
   });
 }
@@ -1046,6 +1359,7 @@ function switchTab(name, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('page-'+name).classList.add('active');
+  requestAnimationFrame(() => updateAnalyticsTabIndicator(btn));
   // Show MA bar only on pax and lf tabs
   const maBar = document.getElementById('ma-bar');
   maBar.style.display = (name==='pax'||name==='lf') ? 'flex' : 'none';
@@ -1503,5 +1817,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.compare-content').forEach(el => el.style.display = 'none');
 });
 </script>
+
+<script id="motion-v4-js">
+function updateAnalyticsTabIndicator(activeBtn = document.querySelector('.tabs .tab.active')) {
+  const tabs = document.querySelector('.tabs');
+  if (!tabs || !activeBtn) return;
+  const tabsRect = tabs.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  tabs.style.setProperty('--tab-w', btnRect.width + 'px');
+  tabs.style.setProperty('--tab-x', (btnRect.left - tabsRect.left - 4 + tabs.scrollLeft) + 'px');
+}
+window.addEventListener('DOMContentLoaded', () => requestAnimationFrame(() => updateAnalyticsTabIndicator()));
+window.addEventListener('resize', () => updateAnalyticsTabIndicator());
+const analyticsTabs = document.querySelector('.tabs');
+if (analyticsTabs) analyticsTabs.addEventListener('scroll', () => updateAnalyticsTabIndicator(), {passive:true});
+</script>
+
 </body>
 </html>
