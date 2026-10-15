@@ -1014,6 +1014,13 @@ function toDateLabel(v) {
   if (!d||isNaN(d)) return null;
   return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
 }
+function toDateYear(v) {
+  if (!v) return null; let d;
+  if (v instanceof Date) d = v;
+  else if (typeof v === 'number') { try { d = new Date(XLSX.SSF.parse_date_code(v).y,0,1); } catch(e){ return null; } }
+  else if (typeof v === 'string') { const m=v.match(/(\d{4})-/); if (m) return +m[1]; }
+  return (d&&!isNaN(d)) ? d.getFullYear() : null;
+}
 const SKIP_SHEETS = new Set(['汇总','匯總','中轉人數','中轉辦理率','逾重费','逾重費','優惠升艙統計表','優選座位統計','機場公司WEB統計','WEB統計及白金卡統計']);
 function detectFlights(wb) {
   const out=[];
@@ -1093,6 +1100,7 @@ function parseFlightSheet(ws) {
   for (let i=3; i<str.length; i++) {
     const sr=str[i]; const rr=raw[i]||[];
     const dateStr = toDateLabel(rr[0])||toDateLabel(sr[0]);
+    const yearVal = toDateYear(rr[0])||toDateYear(sr[0]);
     if (!dateStr||dateStr.includes('合')) continue;
     const paxRaw = (rr[11]!=null&&rr[11]!=='')?parseFloat(rr[11]):0;
     const lfRaw  = Math.round((parseFloat(rr[18])||0)*1000)/10;
@@ -1107,10 +1115,14 @@ function parseFlightSheet(ws) {
       actual=timeStr(aRaw)||'—';
       if (schedStr&&actual!=='—'){
         const [sh,sm]=schedStr.split(':').map(Number);const [ah,am]=actual.split(':').map(Number);
-        if(!isNaN(sh)&&!isNaN(ah)) delayMin=(ah*60+am)-(sh*60+sm);
+        if(!isNaN(sh)&&!isNaN(ah)) {
+          delayMin=(ah*60+am)-(sh*60+sm);
+          if(delayMin<-720) delayMin+=1440;      // 跨午夜延誤
+          else if(delayMin>720) delayMin-=1440;  // 跨午夜提早
+        }
       }
     }
-    out.push({date:dateStr,pax,lf:lfRaw,upgrade:parseFloat(rr[28])||0,remark,sched:schedStr||'',actual,delayMin,cancelled});
+    out.push({date:dateStr,year:yearVal,pax,lf:lfRaw,upgrade:parseFloat(rr[28])||0,remark,sched:schedStr||'',actual,delayMin,cancelled});
   }
   return out;
 }
@@ -1348,6 +1360,9 @@ function switchAppMode(mode) {
   // Check if target data exists
   if (mode==='single' && !singleData) { alert('請先上傳單月資料'); return; }
   if (mode==='compare' && Object.keys(compareData).length===0) { alert('請先上傳比較資料'); return; }
+  // 還原目標模式的航班設定（FLIGHTS/FK 為全域，會被另一模式覆寫）
+  if (mode==='single') setupFlights(singleData._flights, singleData.flightData);
+  else { const fm=Object.keys(compareData)[0], fy=Object.keys(compareData[fm])[0]; setupFlights(compareData[fm][fy]._flights, compareData[fm][fy].flightData); }
   launchApp(mode, singleData, document.getElementById('hdr-badge').textContent);
 }
 
@@ -1501,7 +1516,7 @@ function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLab
 
   // LF
   const lfDs=FK.map(f=>({label:FLIGHTS[f].label,data:dates.map(d=>lfOf(f,d)),borderColor:FLIGHTS[f].color,backgroundColor:'transparent',tension:.3,pointRadius:3,pointHoverRadius:6,borderWidth:2,spanGaps:false}));
-  lfDs.push({label:'80%目標',data:dates.map(()=>80),borderColor:'rgba(255,255,255,.12)',borderDash:[6,4],borderWidth:1,pointRadius:0,fill:false});
+  lfDs.push({label:'80%目標',data:dates.map(()=>80),borderColor:'rgba(100,116,139,.5)',borderDash:[6,4],borderWidth:1,pointRadius:0,fill:false});
   const lfCh=mk('ch-lf','line',{labels:dates,datasets:lfDs},{...TT,scales:{...BS,y:{...BS.y,min:0,max:110,ticks:{callback:v=>v+'%'}}},plugins:{...TT.plugins,tooltip:{...TT.plugins.tooltip,callbacks:{label:ctx=>ctx.dataset.label.includes('目標')?null:` ${ctx.dataset.label}: ${ctx.parsed.y}%`}}}});
   mkLegend('leg-lf',lfCh,FK);
   MA_CHARTS['ch-lf']=FK.map(f=>({label:FLIGHTS[f].label,color:FLIGHTS[f].color,rawData:dates.map(d=>lfOf(f,d))}));
@@ -1527,7 +1542,7 @@ function initSingleMode({flightData,dailyTotal,upgradeRecords,delayData,monthLab
     const fd=delayData.filter(r=>r.flight===f&&!r.cancelled&&r.delayMin!=null);
     return{label:FLIGHTS[f].label,data:fd.map(r=>({x:r.date,y:r.delayMin})),backgroundColor:fd.map(r=>r.delayMin>=30?'#ef4444cc':FLIGHTS[f].color+'bb'),borderColor:fd.map(r=>r.delayMin>=30?'#ef4444':FLIGHTS[f].color),borderWidth:1,pointRadius:6,pointHoverRadius:9,showLine:false,type:'scatter'};
   });
-  dDs.push({label:'準點',data:dDates.map(d=>({x:d,y:0})),borderColor:'rgba(255,255,255,.1)',borderDash:[4,4],borderWidth:1,pointRadius:0,showLine:true,type:'line'});
+  dDs.push({label:'準點',data:dDates.map(d=>({x:d,y:0})),borderColor:'rgba(100,116,139,.5)',borderDash:[4,4],borderWidth:1,pointRadius:0,showLine:true,type:'line'});
   dDs.push({label:'30分',data:dDates.map(d=>({x:d,y:30})),borderColor:'rgba(239,68,68,.3)',borderDash:[6,3],borderWidth:1.5,pointRadius:0,showLine:true,type:'line'});
   const dCh=mk('ch-delay','scatter',{datasets:dDs},{scales:{x:{type:'category',labels:dDates,grid:GL,ticks:{maxRotation:0,font:{size:11}}},y:{grid:GL,title:{display:true,text:'延誤分鐘',color:'#6b8aaa',font:{size:11}},ticks:{callback:v=>(v>=0?'+':'')+v+' min'}}},plugins:{legend:{display:false},tooltip:{...TT.plugins.tooltip,callbacks:{label:ctx=>` ${ctx.dataset.label}  ${ctx.raw.y>=0?'+':''}${ctx.raw.y} 分鐘`}}}});
   mkLegend('leg-delay',dCh,FK);
@@ -1574,14 +1589,14 @@ function renderHeatmap(flightFilter, btn) {
   if(!allDates.length){ document.getElementById('heatmap-container').innerHTML='<div style="color:var(--text-3);font-size:13px;padding:12px 0">無有效延誤資料</div>'; return; }
   // Infer year from context (not stored in row): use current year as fallback
   // date format MM/DD
-  function parseDate(s){const[m,d]=s.split('/').map(Number); const y=new Date().getFullYear(); return new Date(y,m-1,d);}
+  function parseDate(r){const[m,d]=r.date.split('/').map(Number); return new Date(r.year||new Date().getFullYear(),m-1,d);}
   // weekday: 0=Sun…6=Sat. week index: sequential week within displayed dates
   // Assign week number as "which week of the month" (1-based, starting from first date's Monday)
   function weekIndex(d){ return Math.floor((d.getDate()-1)/7); }
   // Build grid: rows=weekday 0-6, cols=week 0-4
   const grid={}; // {weekday: {weekIdx: [delayMin,...]}}
   rows.forEach(r=>{
-    const d=parseDate(r.date);
+    const d=parseDate(r);
     const wd=d.getDay();
     const wi=weekIndex(d);
     if(!grid[wd]) grid[wd]={};
@@ -1643,7 +1658,7 @@ function renderDelayTable(filter) {
     tbody.appendChild(tr);
   });
 }
-function filterDelay(f,btn){ document.querySelectorAll('.flight-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderDelayTable(f); renderHeatmap(f,null); }
+function filterDelay(f,btn){ document.querySelectorAll('#delay-filter-bar .flight-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderDelayTable(f); renderHeatmap(f,null); }
 
 // ═══════════════════════════════════════════
 //  COMPARE MODE
